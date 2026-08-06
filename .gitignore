@@ -1,4 +1,6 @@
 # Dependencies / environments
+
+
 node_modules/
 venv/
 .venv/
@@ -7,7 +9,10 @@ __pycache__/
 
 # Environment secrets - never commit these
 backend/.env
+backend/inductionenv/
+
 frontend/.env
+
 
 # Build output
 frontend/dist/
