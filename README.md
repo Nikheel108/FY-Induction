@@ -7,6 +7,17 @@ attachments)** are sent automatically to both the student and the parent.
 An **admin dashboard** provides statistics, search/filter, edit/delete,
 email re-sending and CSV/Excel export.
 
+### Data collected per registration
+
+* PRN
+* Name
+* Student Email
+* Mobile
+* Parent Name
+* Parent Mobile
+* Parent Email
+* Department — **Computer Science and Engineering (AI & ML)** (only option)
+
 ```
 Frontend : React (Vite) + Tailwind CSS        http://localhost:5173
 Backend  : Flask REST API (SQLAlchemy)        http://localhost:5000
@@ -92,23 +103,20 @@ cd backend
 cp .env.example .env     # then edit .env
 ```
 
-| Variable          | Description                                        |
-|-------------------|----------------------------------------------------|
-| `SECRET_KEY`      | Random string used to sign admin tokens            |
-| `DB_HOST/PORT/NAME` | MySQL connection (defaults: localhost/3306/induction_db) |
-| `DB_USER`         | Usually `root`                                     |
-| `DB_PASSWORD`     | Your local MySQL password (empty if none)          |
-| `EMAIL_ADDRESS`   | Your Gmail address                                 |
-| `EMAIL_PASSWORD`  | Gmail **App Password** (16 chars, no spaces)       |
-| `FRONTEND_URL`    | `http://localhost:5173` for local dev              |
-| `ADMIN_USERNAME` / `ADMIN_PASSWORD` | Admin dashboard login         |
+The provided local `.dev` setup uses:
 
-**Generate a Gmail App Password:**
-1. Enable [2-Step Verification](https://myaccount.google.com/security) on your
-   Google account.
-2. Visit https://myaccount.google.com/apppasswords
-3. Create an app password and paste it into `EMAIL_PASSWORD`. It looks like
-   `abcd efgh ijkl mnop`.
+| Variable          | Value for this project                                |
+|-------------------|-------------------------------------------------------|
+| `DB_USER`         | `root`                                                |
+| `DB_PASSWORD`     | `Sam25/03`                                            |
+| `EMAIL_ADDRESS`   | `testsameer662@gmail.com`                             |
+| `EMAIL_PASSWORD`  | `vxxglodtoulsnlna` (Gmail App Password)               |
+| `FRONTEND_URL`    | `http://localhost:5173`                               |
+| `ADMIN_USERNAME` / `ADMIN_PASSWORD` | `admin` / `admin@123`                  |
+
+> **Note:** The database password contains a `/`. In `.env` it is read as a
+> literal string and works without quoting for this setup. If you move the
+> connection string elsewhere, URL-encode the `/` as `%2F`.
 
 ### 3.3 Install dependencies and run
 

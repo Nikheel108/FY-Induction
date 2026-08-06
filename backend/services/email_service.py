@@ -1,4 +1,4 @@
-"""
+﻿"""
 Email service.
 
 Sends the personalised welcome email to the student and the confirmation email
@@ -174,7 +174,10 @@ def send_registration_emails(student):
         results["student"] = {"status": "sent"}
     except Exception as exc:  # noqa: BLE001 - SMTP errors are all logged
         logger.exception("Failed to send welcome email for student %s", student.id)
-        _record_log(student.id, "welcome", "failed", str(exc))
+        try:
+            _record_log(student.id, "welcome", "failed", str(exc))
+        except Exception:  # noqa: BLE001
+            logger.exception("Failed to record welcome email log for student %s", student.id)
         results["student"] = {"status": "failed", "error": str(exc)}
 
     # --- Confirmation email to the parent --------------------------------------
@@ -185,7 +188,11 @@ def send_registration_emails(student):
         results["parent"] = {"status": "sent"}
     except Exception as exc:  # noqa: BLE001
         logger.exception("Failed to send parent email for student %s", student.id)
-        _record_log(student.id, "parent", "failed", str(exc))
+        try:
+            _record_log(student.id, "parent", "failed", str(exc))
+        except Exception:  # noqa: BLE001
+            logger.exception("Failed to record parent email log for student %s", student.id)
         results["parent"] = {"status": "failed", "error": str(exc)}
 
     return results
+

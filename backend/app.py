@@ -1,4 +1,4 @@
-"""
+﻿"""
 Application entry point for the Student Induction Management System backend.
 
 Run locally with::
@@ -11,6 +11,9 @@ can later be served by Gunicorn on Render with only environment changes.
 
 import logging
 import os
+import urllib.parse
+import urllib.parse
+import urllib.parse
 
 from flask import Flask
 from flask_cors import CORS
@@ -21,6 +24,7 @@ from routes.admin_routes import admin_bp
 from routes.student_routes import student_bp
 from services import utils
 from services.database import db
+from routes.attendance_routes import attendance_bp
 
 # Configure a consistent log format for terminal output.
 logging.basicConfig(
@@ -49,6 +53,7 @@ def create_app(config_class=Config):
     # --- Blueprints --------------------------------------------------------------
     app.register_blueprint(student_bp)
     app.register_blueprint(admin_bp)
+    app.register_blueprint(attendance_bp)
 
     # --- Health check -------------------------------------------------------------
     @app.get("/api/health")
@@ -59,10 +64,31 @@ def create_app(config_class=Config):
     # --- Database bootstrap --------------------------------------------------------
     with app.app_context():
         try:
+            # Create the database itself if it does not exist yet.
+            # ``db.create_all()`` only creates tables inside an existing
+            # database, so we connect without a database name first.
+            from sqlalchemy import create_engine, text
+
+            server_uri = (
+                f"mysql+pymysql://{app.config['DB_USER']}:{app.config['DB_PASSWORD']}"
+                f"@{app.config['DB_HOST']}:{app.config['DB_PORT']}"
+            )
+            server_engine = create_engine(server_uri)
+            with server_engine.connect() as conn:
+                conn.execute(text(
+                    f"CREATE DATABASE IF NOT EXISTS {app.config['DB_NAME']} "
+                    f"CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+                ))
+            server_engine.dispose()
+            logger.info("Database '%s' ensured.", app.config["DB_NAME"])
+        except Exception as exc:  # noqa: BLE001 - startup must not crash the API
+            logger.error("Could not create the database: %s", exc)
+
+        try:
             db.create_all()
             logger.info("Database tables ensured (db=%s).", app.config["DB_NAME"])
         except Exception as exc:  # noqa: BLE001 - startup must not crash the API
-            logger.error("Could not connect to the database: %s", exc)
+            logger.error("Could not create the tables: %s", exc)
 
     # --- Global error handlers ------------------------------------------------------
     @app.errorhandler(404)

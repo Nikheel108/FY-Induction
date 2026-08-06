@@ -8,11 +8,9 @@ import {
   FaFileExcel,
   FaFilter,
   FaHome,
-  FaHotel,
   FaMailBulk,
   FaSearch,
   FaTrash,
-  FaUserGraduate,
   FaUsers,
 } from "react-icons/fa";
 
@@ -31,7 +29,7 @@ import {
   resendEmail,
   updateStudent,
 } from "../services/studentService";
-import { DEPARTMENTS, GENDERS, HOSTEL_STATUSES } from "../constants";
+import { DEPARTMENTS } from "../constants";
 import { exportCSV, exportExcel } from "../utils/exporters";
 
 const PER_PAGE = 10;
@@ -54,8 +52,6 @@ export default function AdminDashboard() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [department, setDepartment] = useState("");
-  const [gender, setGender] = useState("");
-  const [hostelStatus, setHostelStatus] = useState("");
   const [page, setPage] = useState(1);
 
   // --- UI state ---------------------------------------------------------------
@@ -88,8 +84,6 @@ export default function AdminDashboard() {
       per_page: PER_PAGE,
       search: debouncedSearch || undefined,
       department: department || undefined,
-      gender: gender || undefined,
-      hostel_status: hostelStatus || undefined,
     })
       .then((res) => {
         setStudents(res.data.items);
@@ -98,7 +92,7 @@ export default function AdminDashboard() {
       })
       .catch((error) => toast.error(error.message))
       .finally(() => setLoading(false));
-  }, [page, debouncedSearch, department, gender, hostelStatus, toast]);
+  }, [page, debouncedSearch, department, toast]);
 
   const allStudents = useMemo(
     () =>
@@ -122,8 +116,6 @@ export default function AdminDashboard() {
   const handleResetFilters = () => {
     setSearch("");
     setDepartment("");
-    setGender("");
-    setHostelStatus("");
     setPage(1);
   };
 
@@ -176,7 +168,7 @@ export default function AdminDashboard() {
       let rows = allStudents;
       if (!rows) {
         toast.info("Fetching all records for export...");
-        const res = await getStudents({ per_page: 500, search: debouncedSearch || undefined, department: department || undefined, gender: gender || undefined, hostel_status: hostelStatus || undefined });
+        const res = await getStudents({ per_page: 500, search: debouncedSearch || undefined, department: department || undefined });
         rows = res.data.items;
       }
       if (!rows.length) {
@@ -221,8 +213,8 @@ export default function AdminDashboard() {
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <StatCard icon={FaUsers} label="Total Registrations" value={stats?.total ?? "—"} accent="primary" />
             <StatCard icon={FaBuilding} label="Departments" value={stats?.by_department?.length ?? "—"} accent="violet" />
-            <StatCard icon={FaHotel} label="Hostellers" value={stats?.hostel_count ?? "—"} accent="green" />
-            <StatCard icon={FaUserGraduate} label="Day Scholars" value={stats?.day_scholar_count ?? "—"} accent="amber" />
+            <StatCard icon={FaUsers} label="Students" value={stats?.total ?? "—"} accent="green" />
+            <StatCard icon={FaBuilding} label="Programs" value="1" accent="amber" />
           </div>
 
           <div className="grid gap-6 lg:grid-cols-3">
@@ -252,15 +244,7 @@ export default function AdminDashboard() {
                     <option value="">All Departments</option>
                     {DEPARTMENTS.map((d) => <option key={d} value={d}>{d}</option>)}
                   </select>
-                  <select className="input-field !w-auto" value={gender} onChange={(e) => { setGender(e.target.value); setPage(1); }}>
-                    <option value="">All Genders</option>
-                    {GENDERS.map((g) => <option key={g} value={g}>{g}</option>)}
-                  </select>
-                  <select className="input-field !w-auto" value={hostelStatus} onChange={(e) => { setHostelStatus(e.target.value); setPage(1); }}>
-                    <option value="">All Students</option>
-                    {HOSTEL_STATUSES.map((h) => <option key={h} value={h}>{h}</option>)}
-                  </select>
-                  {(search || department || gender || hostelStatus) && (
+                  {(search || department) && (
                     <button type="button" className="btn-secondary !px-3 !py-2" onClick={handleResetFilters}>
                       Reset
                     </button>
@@ -285,7 +269,7 @@ export default function AdminDashboard() {
                   <div className="py-16 text-center">
                     <FaUsers className="mx-auto text-4xl text-slate-300" />
                     <p className="mt-3 text-sm font-medium text-slate-500">
-                      {search || department || gender || hostelStatus
+                      {search || department
                         ? "No students match your filters."
                         : "No registrations yet."}
                     </p>
@@ -294,10 +278,9 @@ export default function AdminDashboard() {
                   <table className="w-full text-left text-sm">
                     <thead>
                       <tr className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-400">
-                        <th className="px-3 py-3">Registration ID</th>
+                         <th className="px-3 py-3">Registration ID</th>
                         <th className="px-3 py-3">Student</th>
                         <th className="px-3 py-3">Department</th>
-                        <th className="px-3 py-3">Status</th>
                         <th className="px-3 py-3 text-right">Actions</th>
                       </tr>
                     </thead>
@@ -310,18 +293,7 @@ export default function AdminDashboard() {
                             <p className="text-xs text-slate-400">{student.prn}</p>
                           </td>
                           <td className="px-3 py-3 text-slate-600">
-                            {student.department} · {student.division}
-                          </td>
-                          <td className="px-3 py-3">
-                            <span
-                              className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                                student.hostel_status === "Hostel"
-                                  ? "bg-emerald-100 text-emerald-700"
-                                  : "bg-sky-100 text-sky-700"
-                              }`}
-                            >
-                              {student.hostel_status}
-                            </span>
+                            {student.department}
                           </td>
                           <td className="px-3 py-3">
                             <div className="flex items-center justify-end gap-1">

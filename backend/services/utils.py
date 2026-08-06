@@ -1,4 +1,4 @@
-"""
+﻿"""
 Utility helpers shared across the application.
 
 Contains input validation helpers, admin authentication (signed tokens), unique
@@ -17,6 +17,8 @@ from reportlab.lib.units import mm
 from reportlab.pdfgen import canvas
 
 from models import Student
+import secrets
+import string
 
 # ---------------------------------------------------------------------------
 # Validation helpers
@@ -54,15 +56,22 @@ def generate_registration_id():
     """
     Generate a human-friendly unique registration ID.
 
-    Format: ``REG-YYYY-NNNN`` where NNNN is the number of registrations so far
-    plus one. A 2-character random suffix guards against a rare race between two
-    simultaneous submissions.
+    Format: `REG-YYYY-NNNN` where NNNN is the number of registrations so far
+    plus one. A 6-character random suffix (uppercase letters and digits) guards
+    against race conditions. If a collision occurs (extremely rare), retry up to
+    5 times with a new random suffix.
     """
     year = datetime.utcnow().year
     count = Student.query.count()
-    suffix = f"{abs(hash(datetime.utcnow())):x}"[-2:]
-    return f"REG-{year}-{count + 1:04d}-{suffix.upper()}"
-
+    base = f"REG-{year}-{count + 1:04d}"
+    alphabet = string.ascii_uppercase + string.digits
+    for _ in range(5):
+        suffix = ''.join(secrets.choice(alphabet) for _ in range(6))
+        reg_id = f"{base}-{suffix}"
+        if not Student.query.filter_by(registration_id=reg_id).first():
+            return reg_id
+    # Fallback: use a UUID suffix if we somehow collide 5 times (should not happen)
+    return f"{base}-{secrets.token_hex(3).upper()}"
 
 # ---------------------------------------------------------------------------
 # Admin authentication (stateless signed tokens via itsdangerous)
@@ -212,3 +221,6 @@ def build_receipt_pdf(student):
     pdf.showPage()
     pdf.save()
     return buffer.getvalue()
+
+
+

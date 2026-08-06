@@ -1,3 +1,5 @@
+import { forwardRef } from "react";
+
 /**
  * Small labelled form field wrapper plus styled input / select / textarea.
  * Designed to work with react-hook-form's ``register`` spread.
@@ -16,32 +18,35 @@ export function Field({ label, required, error, children, hint }) {
   );
 }
 
-export function TextInput({ error, className = "", ...props }) {
+export const TextInput = forwardRef(({ error, className = "", ...props }, ref) => {
   return (
     <input
       {...props}
+      ref={ref}
       className={`input-field ${error ? "input-error" : ""} ${className}`}
     />
   );
-}
+});
 
-export function SelectInput({ error, children, className = "", ...props }) {
+export const SelectInput = forwardRef(({ error, children, className = "", ...props }, ref) => {
   return (
     <select
       {...props}
+      ref={ref}
       className={`input-field ${error ? "input-error" : ""} ${className}`}
     >
       {children}
     </select>
   );
-}
+});
 
-export function TextArea({ error, className = "", ...props }) {
+export const TextArea = forwardRef(({ error, className = "", ...props }, ref) => {
   return (
     <textarea
       rows={3}
       {...props}
+      ref={ref}
       className={`input-field ${error ? "input-error" : ""} ${className}`}
     />
   );
-}
+});

@@ -1,14 +1,16 @@
 import { Link, useNavigate } from "react-router-dom";
-import { FaChartBar, FaSignOutAlt, FaUserGraduate, FaUsers } from "react-icons/fa";
+import { FaChartBar, FaSignOutAlt, FaUserGraduate, FaUsers, FaClipboardCheck } from "react-icons/fa";
 
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 
 const LINKS = [
   { to: "/admin/dashboard", label: "Dashboard", icon: FaChartBar },
-  { to: "/admin/dashboard", label: "Students", icon: FaUserGraduate },
+  // { to: "/admin/dashboard", label: "Students", icon: FaUserGraduate },
+  { to: "/admin/attendance", label: "Attendance", icon: FaClipboardCheck }, // new
 ];
 
+// ... rest of the component remains unchanged
 /**
  * Sidebar navigation used across the admin area. Responsive: collapses to a
  * top bar on small screens and toggles via the burger button.

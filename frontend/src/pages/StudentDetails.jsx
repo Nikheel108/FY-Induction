@@ -182,7 +182,7 @@ export default function StudentDetails() {
             <div className="min-w-0 flex-1">
               <h1 className="text-xl font-extrabold text-slate-900">{student.full_name}</h1>
               <p className="text-sm text-slate-500">
-                {student.prn} · {student.department} · Division {student.division}
+                {student.prn} · {student.department}
               </p>
               <span className="mt-2 inline-flex rounded-full bg-primary-50 px-3 py-1 text-xs font-bold text-primary-700">
                 {student.registration_id}
@@ -190,12 +190,12 @@ export default function StudentDetails() {
             </div>
             <div className="grid grid-cols-2 gap-3 text-center">
               <div className="rounded-lg bg-slate-50 px-4 py-2">
-                <p className="text-lg font-extrabold text-slate-800">{student.hostel_status}</p>
-                <p className="text-xs text-slate-400">Status</p>
+                <p className="text-lg font-extrabold text-slate-800">{student.student_phone}</p>
+                <p className="text-xs text-slate-400">Mobile</p>
               </div>
               <div className="rounded-lg bg-slate-50 px-4 py-2">
-                <p className="text-lg font-extrabold text-slate-800">{student.blood_group}</p>
-                <p className="text-xs text-slate-400">Blood Group</p>
+                <p className="text-lg font-extrabold text-slate-800">{student.parent_name}</p>
+                <p className="text-xs text-slate-400">Parent</p>
               </div>
             </div>
           </div>
@@ -204,30 +204,18 @@ export default function StudentDetails() {
             <>
               <Info label="Full Name" value={student.full_name} />
               <Info label="PRN" value={student.prn} />
-              <Info label="Roll Number" value={student.roll_number} />
-              <Info label="Department" value={`${student.department} · ${student.division}`} />
-              <Info label="Gender" value={student.gender} />
-              <Info label="Date of Birth" value={student.dob} />
+              <Info label="Department" value={student.department} />
               <Info label="Student Email" value={student.student_email} />
-              <Info label="Mobile Number" value={student.student_phone} />
-              <Info label="WhatsApp" value={student.whatsapp} />
-              <Info label="Hostel / Day Scholar" value={student.hostel_status} />
-              <Info label="Emergency Contact" value={student.emergency_contact} />
-              <Info label="Address" value={`${student.address}, ${student.city}, ${student.state} - ${student.pincode}`} />
+              <Info label="Mobile" value={student.student_phone} />
+              <Info label="Registered On" value={student.created_at ? new Date(student.created_at).toLocaleString() : "—"} />
             </>
           ))}
 
-          {section("Parent / Guardian Information", (
+          {section("Parent Information", (
             <>
-              <Info label="Father Name" value={student.father_name} />
-              <Info label="Father Email" value={student.father_email} />
-              <Info label="Father Mobile" value={student.father_phone} />
-              <Info label="Mother Name" value={student.mother_name} />
-              <Info label="Mother Email" value={student.mother_email} />
-              <Info label="Mother Mobile" value={student.mother_phone} />
-              <Info label="Guardian Name" value={student.guardian_name} />
-              <Info label="Guardian Email" value={student.guardian_email} />
-              <Info label="Guardian Mobile" value={student.guardian_phone} />
+              <Info label="Parent Name" value={student.parent_name} />
+              <Info label="Parent Email" value={student.parent_email} />
+              <Info label="Parent Mobile" value={student.parent_phone} />
             </>
           ))}
 

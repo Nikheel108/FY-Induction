@@ -1,8 +1,9 @@
 import { Link } from "react-router-dom";
-import { FaGraduationCap, FaUserShield } from "react-icons/fa";
+import { FaGraduationCap } from "react-icons/fa";
 
 /**
  * Public site navigation bar shown on the non-admin pages.
+ * Only includes the registration button – admin link is removed.
  */
 export default function Navbar() {
   return (
@@ -26,12 +27,7 @@ export default function Navbar() {
           <Link to="/register" className="btn-primary">
             Register Now
           </Link>
-          <Link
-            to="/admin/login"
-            className="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 transition hover:bg-slate-100"
-          >
-            <FaUserShield /> Admin
-          </Link>
+          {/* Admin link removed */}
         </nav>
       </div>
     </header>

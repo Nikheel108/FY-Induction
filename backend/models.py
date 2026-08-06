@@ -7,9 +7,11 @@ Two tables are defined:
                     ID and audit timestamps.
   * ``mail_logs`` - one row per attempted email (welcome / parent) so admins
                     can see exactly what was sent, when, and whether it failed.
+  * ``sessions``  - stores each visitor's session with IP and location.
+  * ``attendance`` - attendance records per student per day, linked to a session.
 """
 
-from datetime import datetime
+from datetime import datetime, date
 
 from services.database import db
 
@@ -85,3 +87,37 @@ class MailLog(db.Model):
             "sent_time": self.sent_time.isoformat() if self.sent_time else None,
             "error_message": self.error_message,
         }
+
+
+# ----- NEW MODELS for Session & Attendance -----
+
+class Session(db.Model):
+    """Store each visitor session with IP and location."""
+    __tablename__ = "sessions"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    session_id = db.Column(db.String(64), unique=True, nullable=False, index=True)
+    ip_address = db.Column(db.String(45), nullable=False)   # IPv6 max length
+    location = db.Column(db.Text, nullable=True)            # e.g. "Mumbai, India"
+    user_agent = db.Column(db.String(255), nullable=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+    # Relationship: one session can have many attendance records
+    attendances = db.relationship("Attendance", backref="session", lazy=True)
+
+
+class Attendance(db.Model):
+    """Attendance record per student per day, linked to a session."""
+    __tablename__ = "attendance"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    prn = db.Column(db.String(30), nullable=False, index=True)
+    session_id = db.Column(db.Integer, db.ForeignKey("sessions.id"), nullable=False)
+    date = db.Column(db.Date, nullable=False, default=date.today)
+    status = db.Column(db.String(20), nullable=False, default="present")
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+    # Ensure one session cannot mark more than one attendance per day
+    __table_args__ = (
+        db.UniqueConstraint('session_id', 'date', name='unique_session_date'),
+    )

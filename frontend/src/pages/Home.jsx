@@ -90,12 +90,12 @@ export default function Home() {
                 <p className="mt-1 text-xs font-medium text-slate-400">Departments</p>
               </div>
               <div className="rounded-xl bg-white/5 p-4 backdrop-blur">
-                <p className="text-3xl font-extrabold text-white">{stats.hostel_count}</p>
-                <p className="mt-1 text-xs font-medium text-slate-400">Hostellers</p>
+                <p className="text-3xl font-extrabold text-white">{stats.total}</p>
+                <p className="mt-1 text-xs font-medium text-slate-400">Students</p>
               </div>
               <div className="rounded-xl bg-white/5 p-4 backdrop-blur">
-                <p className="text-3xl font-extrabold text-white">{stats.day_scholar_count}</p>
-                <p className="mt-1 text-xs font-medium text-slate-400">Day Scholars</p>
+                <p className="text-3xl font-extrabold text-white">1</p>
+                <p className="mt-1 text-xs font-medium text-slate-400">Program</p>
               </div>
             </div>
           )}

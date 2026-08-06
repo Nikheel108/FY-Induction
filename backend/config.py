@@ -1,4 +1,4 @@
-"""
+﻿"""
 Configuration module for the Student Induction Management System.
 
 All sensitive / environment specific values are read from the ``.env`` file
@@ -7,6 +7,7 @@ Render, Railway or any other host by only changing environment variables.
 """
 
 import os
+import urllib.parse
 
 from dotenv import load_dotenv
 
@@ -39,7 +40,7 @@ class Config:
     # SQLAlchemy connection string. ``charset`` and ``unix_socket`` alternatives
     # are intentionally omitted because we always talk TCP on Windows/XAMPP.
     SQLALCHEMY_DATABASE_URI = (
-        f"mysql+pymysql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+        f"mysql+pymysql://{DB_USER}:{urllib.parse.quote_plus(DB_PASSWORD)}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
         "?charset=utf8mb4"
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
@@ -51,6 +52,7 @@ class Config:
     SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
     SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
     MAIL_USE_TLS = os.getenv("MAIL_USE_TLS", "true").lower() == "true"
+    MAIL_TIMEOUT = int(os.getenv("MAIL_TIMEOUT", "10"))
 
     MAIL_SERVER = SMTP_HOST
     MAIL_PORT = SMTP_PORT

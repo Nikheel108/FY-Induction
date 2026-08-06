@@ -83,7 +83,7 @@ export default function Success() {
                 </div>
                 <div className="rounded-lg bg-slate-50 p-3">
                   <p className="text-xs text-slate-400">Department</p>
-                  <p className="font-semibold text-slate-800">{student.department} · {student.division}</p>
+                  <p className="font-semibold text-slate-800">{student.department}</p>
                 </div>
               </div>
 
