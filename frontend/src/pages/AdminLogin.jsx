@@ -86,10 +86,7 @@ export default function AdminLogin() {
             </button>
           </form>
 
-          <p className="mt-6 text-center text-xs text-slate-400">
-            Default credentials: <code className="rounded bg-slate-100 px-1.5 py-0.5">admin</code> /{" "}
-            <code className="rounded bg-slate-100 px-1.5 py-0.5">admin@123</code> (change in backend/.env)
-          </p>
+          
         </div>
 
         <p className="mt-4 text-center text-sm text-slate-400">

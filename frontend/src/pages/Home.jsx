@@ -41,6 +41,25 @@ const FEATURES = [
  */
 export default function Home() {
   const [stats, setStats] = useState(null);
+  const [showSplash, setShowSplash] = useState(true);
+
+  // Generate some random stars for the background
+  const [stars] = useState(() => {
+    return Array.from({ length: 50 }).map(() => ({
+      id: Math.random(),
+      left: `${Math.random() * 100}%`,
+      top: `${Math.random() * 100}%`,
+      animationDuration: `${2 + Math.random() * 3}s`,
+      animationDelay: `${Math.random() * 2}s`,
+      width: `${2 + Math.random() * 3}px`,
+      height: `${2 + Math.random() * 3}px`,
+    }));
+  });
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShowSplash(false), 5000);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     getStatistics()
@@ -50,6 +69,39 @@ export default function Home() {
 
   return (
     <div className="flex min-h-screen flex-col">
+      {/* 5-second Splash Screen */}
+      {showSplash && (
+        <div className="animate-splash-screen fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950 overflow-hidden px-4">
+          {/* Animated stars */}
+          {stars.map((s) => (
+            <div
+              key={s.id}
+              className="star"
+              style={{
+                left: s.left,
+                top: s.top,
+                width: s.width,
+                height: s.height,
+                animationDuration: s.animationDuration,
+                animationDelay: s.animationDelay,
+              }}
+            />
+          ))}
+          
+          <div className="animate-zoom-text z-10 text-center">
+            <h1 className="text-3xl sm:text-5xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-primary-400 via-emerald-300 to-primary-600 mb-4 drop-shadow-lg">
+              Welcome FY Students!
+            </h1>
+            <h2 className="text-xl sm:text-2xl font-bold text-slate-100 mb-6 drop-shadow-md">
+              To Our CSE AIML Department & Our College
+            </h2>
+            <p className="text-lg sm:text-xl text-primary-200 font-medium italic">
+              "With full josh, let's make an impact in the upcoming generation!"
+            </p>
+          </div>
+        </div>
+      )}
+
       <Navbar />
 
       {/* Hero */}
