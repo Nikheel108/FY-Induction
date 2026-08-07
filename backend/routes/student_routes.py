@@ -70,7 +70,7 @@ def _validate_payload(payload):
         "full_name": full_name, "prn": prn, "department": department,
         "student_email": student_email, "student_phone": student_phone,
         "parent_name": parent_name, "parent_email": parent_email,
-        "parent_phone": parent_phone,
+        "parent_phone": parent_phone, "photo_base64": payload.get("photo_base64")
     }
     return errors, cleaned
 

@@ -1,4 +1,4 @@
-﻿"""
+"""
 Utility helpers shared across the application.
 
 Contains input validation helpers, admin authentication (signed tokens), unique
@@ -130,6 +130,8 @@ def build_receipt_pdf(student):
     attached to an email without touching the filesystem.
     """
     from io import BytesIO
+    import base64
+    from reportlab.lib.utils import ImageReader
 
     buffer = BytesIO()
     pdf = canvas.Canvas(buffer, pagesize=A4)
@@ -186,6 +188,20 @@ def build_receipt_pdf(student):
         pdf.setFillColor(dark)
         pdf.drawString(60 * mm, y, str(value))
         y -= 6 * mm
+
+    # Draw photo if available
+    if getattr(student, 'photo_base64', None):
+        try:
+            # The base64 string from frontend includes the data URI prefix (e.g. data:image/jpeg;base64,...)
+            photo_data = student.photo_base64.split(",")[1] if "," in student.photo_base64 else student.photo_base64
+            img_bytes = base64.b64decode(photo_data)
+            img = ImageReader(BytesIO(img_bytes))
+            # Draw it at the top right of the student section
+            photo_size = 30 * mm
+            pdf.drawImage(img, width - margin - photo_size, height - 90 * mm, width=photo_size, height=photo_size, preserveAspectRatio=True)
+        except Exception as e:
+            # Silently ignore invalid base64 images
+            print(f"Error drawing photo: {e}")
 
     y -= 6 * mm
     pdf.setFillColor(accent)

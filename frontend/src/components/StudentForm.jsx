@@ -1,4 +1,6 @@
+import { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
+import { FaCamera, FaUpload, FaTimes } from "react-icons/fa";
 
 import { DEPARTMENTS } from "../constants";
 import { Field, SelectInput, TextInput } from "./fields";
@@ -25,9 +27,13 @@ const EMAIL_RULES = (required = true) => ({
  * everything server-side.
  */
 export default function StudentForm({ defaultValues = {}, onSubmit, submitLabel = "Submit", loading = false }) {
+  const [photoPreview, setPhotoPreview] = useState(defaultValues.photo_base64 || null);
+  const fileInputRef = useRef(null);
+
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm({
     defaultValues: {
@@ -39,9 +45,59 @@ export default function StudentForm({ defaultValues = {}, onSubmit, submitLabel 
       parent_name: "",
       parent_email: "",
       parent_phone: "",
+      photo_base64: "",
       ...defaultValues, // override with provided defaults (e.g., when editing)
     },
   });
+
+  const handlePhotoChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // We only accept images
+    if (!file.type.startsWith("image/")) {
+      alert("Please select an image file.");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        // Resize down to max 400x400 to save bandwidth & db space
+        const canvas = document.createElement("canvas");
+        const MAX_SIZE = 400;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height && width > MAX_SIZE) {
+          height *= MAX_SIZE / width;
+          width = MAX_SIZE;
+        } else if (height > MAX_SIZE) {
+          width *= MAX_SIZE / height;
+          height = MAX_SIZE;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Convert to highly compressed JPEG
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.7);
+        setPhotoPreview(dataUrl);
+        setValue("photo_base64", dataUrl, { shouldDirty: true });
+      };
+      img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removePhoto = () => {
+    setPhotoPreview(null);
+    setValue("photo_base64", "");
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-8">
@@ -91,6 +147,65 @@ export default function StudentForm({ defaultValues = {}, onSubmit, submitLabel 
               placeholder="10-digit mobile number"
             />
           </Field>
+          
+          <div className="sm:col-span-2 lg:col-span-3 mt-4">
+            <Field label="Student Photo (Optional for Receipt)">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                {photoPreview ? (
+                  <div className="relative h-24 w-24 overflow-hidden rounded-lg border border-slate-200 bg-slate-50">
+                    <img src={photoPreview} alt="Preview" className="h-full w-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={removePhoto}
+                      className="absolute right-1 top-1 grid h-6 w-6 place-items-center rounded-full bg-black/60 text-xs text-white hover:bg-red-600 transition"
+                    >
+                      <FaTimes />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex h-24 w-24 flex-col items-center justify-center rounded-lg border-2 border-dashed border-slate-300 bg-slate-50 text-slate-400">
+                    <FaCamera className="text-2xl" />
+                    <span className="mt-1 text-[10px] font-medium">No Photo</span>
+                  </div>
+                )}
+                <div className="flex flex-1 flex-col gap-2">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    capture="user"
+                    className="hidden"
+                    ref={fileInputRef}
+                    onChange={handlePhotoChange}
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      className="btn-secondary !px-4 !py-2 !text-sm flex-1 sm:flex-none justify-center"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <FaCamera /> Capture
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-secondary !px-4 !py-2 !text-sm flex-1 sm:flex-none justify-center"
+                      onClick={() => {
+                        if (fileInputRef.current) {
+                          fileInputRef.current.removeAttribute("capture");
+                          fileInputRef.current.click();
+                          fileInputRef.current.setAttribute("capture", "user"); // restore it afterwards
+                        }
+                      }}
+                    >
+                      <FaUpload /> Upload
+                    </button>
+                  </div>
+                  <p className="text-xs text-slate-500">
+                    Take a selfie or upload a passport-size photo. This will be printed on your receipt.
+                  </p>
+                </div>
+              </div>
+            </Field>
+          </div>
         </div>
       </section>
 

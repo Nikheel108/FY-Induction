@@ -36,6 +36,9 @@ class Student(db.Model):
     parent_email = db.Column(db.String(150), nullable=False)
     parent_phone = db.Column(db.String(20), nullable=False)
 
+    # --- Media ---
+    photo_base64 = db.Column(db.Text, nullable=True)
+
     # --- Audit ---
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow,
@@ -59,6 +62,7 @@ class Student(db.Model):
             "parent_name": self.parent_name,
             "parent_email": self.parent_email,
             "parent_phone": self.parent_phone,
+            "photo_base64": self.photo_base64,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }

@@ -176,9 +176,15 @@ export default function StudentDetails() {
         <main className="mx-auto w-full max-w-5xl flex-1 space-y-6 p-4 sm:p-6">
           {/* Identity banner */}
           <div className="card flex flex-col gap-5 p-6 sm:flex-row sm:items-center">
-            <span className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-primary-700 text-2xl font-extrabold text-white">
-              {student.full_name?.charAt(0).toUpperCase()}
-            </span>
+            {student.photo_base64 ? (
+              <div className="h-16 w-16 shrink-0 overflow-hidden rounded-2xl border border-slate-200">
+                <img src={student.photo_base64} alt="Student" className="h-full w-full object-cover" />
+              </div>
+            ) : (
+              <span className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl bg-primary-700 text-2xl font-extrabold text-white">
+                {student.full_name?.charAt(0).toUpperCase()}
+              </span>
+            )}
             <div className="min-w-0 flex-1">
               <h1 className="text-xl font-extrabold text-slate-900">{student.full_name}</h1>
               <p className="text-sm text-slate-500">
