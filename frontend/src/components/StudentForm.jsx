@@ -111,7 +111,7 @@ export default function StudentForm({ defaultValues = {}, onSubmit, submitLabel 
       </section>
 
       <div className="flex items-center justify-end gap-3 border-t border-slate-200 pt-5">
-        <button type="submit" className="btn-primary" disabled={loading}>
+        <button type="submit" className="btn-primary w-full sm:w-auto" disabled={loading}>
           {loading ? "Please wait..." : submitLabel}
         </button>
       </div>

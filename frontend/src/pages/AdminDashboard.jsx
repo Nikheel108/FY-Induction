@@ -219,14 +219,14 @@ export default function AdminDashboard() {
 
           <div className="grid gap-6 lg:grid-cols-3">
             {/* Department chart */}
-            <div className="card p-5 lg:col-span-1">
+            <div className="card p-4 sm:p-5 lg:col-span-1">
               <h2 className="section-title mb-4">Department-wise Count</h2>
               <DepartmentChart data={stats?.by_department ?? []} />
             </div>
 
             {/* Filters + table */}
             <div className="card lg:col-span-2">
-              <div className="flex flex-wrap items-end gap-3 border-b border-slate-200 p-5">
+              <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-end gap-3 border-b border-slate-200 p-4 sm:p-5">
                 <div className="relative min-w-[200px] flex-1">
                   <FaSearch className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                   <input
@@ -251,12 +251,12 @@ export default function AdminDashboard() {
                   )}
                 </div>
 
-                <div className="flex gap-2">
-                  <button type="button" className="btn-secondary !px-3 !py-2 text-emerald-700" onClick={() => handleExport("excel")}>
-                    <FaFileExcel /> <span className="hidden md:inline">Excel</span>
+                <div className="flex flex-col sm:flex-row gap-2 mt-2 sm:mt-0">
+                  <button type="button" className="btn-secondary !px-3 !py-2 text-emerald-700 w-full sm:w-auto" onClick={() => handleExport("excel")}>
+                    <FaFileExcel /> <span className="inline md:inline">Excel</span>
                   </button>
-                  <button type="button" className="btn-secondary !px-3 !py-2" onClick={() => handleExport("csv")}>
-                    <FaDownload /> <span className="hidden md:inline">CSV</span>
+                  <button type="button" className="btn-secondary !px-3 !py-2 w-full sm:w-auto" onClick={() => handleExport("csv")}>
+                    <FaDownload /> <span className="inline md:inline">CSV</span>
                   </button>
                 </div>
               </div>
@@ -340,7 +340,7 @@ export default function AdminDashboard() {
 
               {/* Pagination */}
               {!loading && pages > 1 && (
-                <div className="flex items-center justify-between border-t border-slate-200 px-5 py-3">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-200 px-4 sm:px-5 py-3">
                   <p className="text-xs text-slate-500">
                     Showing {students.length} of {total} students
                   </p>

@@ -52,13 +52,13 @@ export default function Success() {
   return (
     <div className="flex min-h-screen flex-col bg-slate-100">
       <Navbar />
-      <main className="mx-auto flex w-full max-w-2xl flex-1 items-center px-4 py-12">
-        <div className="card w-full p-8 text-center sm:p-12">
-          <span className="animate-pop mx-auto grid h-20 w-20 place-items-center rounded-full bg-emerald-100 text-emerald-600">
-            <FaCheckCircle className="text-5xl" />
+      <main className="mx-auto flex w-full max-w-2xl flex-1 items-center px-4 py-8 sm:py-12">
+        <div className="card w-full p-6 text-center sm:p-12">
+          <span className="animate-pop mx-auto grid h-16 w-16 sm:h-20 sm:w-20 place-items-center rounded-full bg-emerald-100 text-emerald-600">
+            <FaCheckCircle className="text-4xl sm:text-5xl" />
           </span>
 
-          <h1 className="animate-fade-up mt-6 text-2xl font-extrabold text-slate-900 sm:text-3xl">
+          <h1 className="animate-fade-up mt-6 text-xl font-extrabold text-slate-900 sm:text-3xl">
             Registration Successful!
           </h1>
           <p className="animate-fade-up mt-2 text-sm text-slate-500">
@@ -106,14 +106,14 @@ export default function Success() {
               <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:justify-center">
                 <button
                   type="button"
-                  className="btn-primary"
+                  className="btn-primary w-full sm:w-auto"
                   onClick={handleDownloadReceipt}
                   disabled={downloading}
                 >
                   {downloading ? <Spinner className="!py-0 !text-white" label="" /> : <FaDownload />}
                   {downloading ? "Generating..." : "Download Receipt (PDF)"}
                 </button>
-                <Link to="/" className="btn-secondary">
+                <Link to="/" className="btn-secondary w-full sm:w-auto">
                   <FaHome /> Back to Home
                 </Link>
               </div>

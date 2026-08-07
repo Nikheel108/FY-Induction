@@ -9,22 +9,22 @@ export default function Navbar() {
   return (
     <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-        <Link to="/" className="flex items-center gap-3">
-          <span className="grid h-10 w-10 place-items-center rounded-lg bg-primary-700 text-white">
-            <FaGraduationCap className="text-xl" />
+        <Link to="/" className="flex items-center gap-2 sm:gap-3">
+          <span className="grid h-8 w-8 sm:h-10 sm:w-10 place-items-center rounded-lg bg-primary-700 text-white flex-shrink-0">
+            <FaGraduationCap className="text-lg sm:text-xl" />
           </span>
           <span className="leading-tight">
-            <span className="block text-sm font-extrabold text-slate-900">
+            <span className="block text-xs sm:text-sm font-extrabold text-slate-900 truncate max-w-[150px] sm:max-w-none">
               MIT Academy of Engineering
             </span>
-            <span className="block text-xs text-slate-500">
+            <span className="block text-[10px] sm:text-xs text-slate-500 truncate max-w-[150px] sm:max-w-none">
               First Year Induction Program
             </span>
           </span>
         </Link>
 
-        <nav className="flex items-center gap-3">
-          <Link to="/register" className="btn-primary">
+        <nav className="flex items-center gap-2 sm:gap-3">
+          <Link to="/register" className="btn-primary !px-3 !py-2 !text-xs sm:!px-5 sm:!py-2.5 sm:!text-sm whitespace-nowrap">
             Register Now
           </Link>
           {/* Admin link removed */}

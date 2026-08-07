@@ -55,11 +55,11 @@ export default function Home() {
       {/* Hero */}
       <section className="relative overflow-hidden bg-slate-900">
         <div className="absolute inset-0 bg-gradient-to-br from-primary-900 via-slate-900 to-slate-950" />
-        <div className="relative mx-auto max-w-6xl px-4 py-20 text-center">
-          <p className="text-sm font-semibold uppercase tracking-widest text-primary-300">
+        <div className="relative mx-auto max-w-6xl px-4 py-12 sm:py-20 text-center">
+          <p className="text-xs sm:text-sm font-semibold uppercase tracking-widest text-primary-300">
             Academic Year 2026-27
           </p>
-          <h1 className="mx-auto mt-3 max-w-3xl text-3xl font-extrabold text-white sm:text-5xl">
+          <h1 className="mx-auto mt-3 max-w-3xl text-3xl font-extrabold text-white sm:text-4xl md:text-5xl">
             Welcome to the First Year Induction Program
           </h1>
           <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-slate-300 sm:text-lg">
@@ -67,34 +67,34 @@ export default function Home() {
             induction program to receive your schedule, campus map and handbook —
             delivered straight to your inbox.
           </p>
-          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Link to="/register" className="btn-primary !px-8 !py-3 !text-base">
+          <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
+            <Link to="/register" className="btn-primary !px-8 !py-3 !text-base w-full sm:w-auto">
               Register for Induction
             </Link>
             <Link
               to="/admin/login"
-              className="inline-flex items-center justify-center rounded-lg border border-slate-500 px-8 py-3 text-base font-semibold text-slate-200 transition hover:bg-white/10"
+              className="inline-flex items-center justify-center rounded-lg border border-slate-500 px-8 py-3 text-base font-semibold text-slate-200 transition hover:bg-white/10 w-full sm:w-auto"
             >
               Admin Dashboard
             </Link>
           </div>
 
           {stats && (
-            <div className="mx-auto mt-12 grid max-w-3xl grid-cols-2 gap-4 sm:grid-cols-4">
-              <div className="rounded-xl bg-white/5 p-4 backdrop-blur">
-                <p className="text-3xl font-extrabold text-white">{stats.total}</p>
+            <div className="mx-auto mt-12 grid max-w-3xl grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-4">
+              <div className="rounded-xl bg-white/5 p-3 sm:p-4 backdrop-blur">
+                <p className="text-2xl sm:text-3xl font-extrabold text-white">{stats.total}</p>
                 <p className="mt-1 text-xs font-medium text-slate-400">Registrations</p>
               </div>
-              <div className="rounded-xl bg-white/5 p-4 backdrop-blur">
-                <p className="text-3xl font-extrabold text-white">{stats.by_department?.length ?? 0}</p>
+              <div className="rounded-xl bg-white/5 p-3 sm:p-4 backdrop-blur">
+                <p className="text-2xl sm:text-3xl font-extrabold text-white">{stats.by_department?.length ?? 0}</p>
                 <p className="mt-1 text-xs font-medium text-slate-400">Departments</p>
               </div>
-              <div className="rounded-xl bg-white/5 p-4 backdrop-blur">
-                <p className="text-3xl font-extrabold text-white">{stats.total}</p>
+              <div className="rounded-xl bg-white/5 p-3 sm:p-4 backdrop-blur">
+                <p className="text-2xl sm:text-3xl font-extrabold text-white">{stats.total}</p>
                 <p className="mt-1 text-xs font-medium text-slate-400">Students</p>
               </div>
-              <div className="rounded-xl bg-white/5 p-4 backdrop-blur">
-                <p className="text-3xl font-extrabold text-white">1</p>
+              <div className="rounded-xl bg-white/5 p-3 sm:p-4 backdrop-blur">
+                <p className="text-2xl sm:text-3xl font-extrabold text-white">1</p>
                 <p className="mt-1 text-xs font-medium text-slate-400">Program</p>
               </div>
             </div>
@@ -136,7 +136,7 @@ export default function Home() {
               </p>
             </div>
           </div>
-          <Link to="/register" className="btn-primary !bg-white !text-primary-700 hover:!bg-primary-50">
+          <Link to="/register" className="btn-primary !bg-white !text-primary-700 hover:!bg-primary-50 w-full sm:w-auto mt-4 sm:mt-0">
             <FaGraduationCap /> Register Now
           </Link>
         </div>
