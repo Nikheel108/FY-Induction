@@ -142,7 +142,7 @@ export default function StudentDetails() {
   );
 
   const section = (title, children) => (
-    <div className="card p-6">
+    <div className="card p-4 sm:p-6">
       <h2 className="section-title mb-5">{title}</h2>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{children}</div>
     </div>
@@ -153,21 +153,21 @@ export default function StudentDetails() {
       <Sidebar />
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3">
-          <Link to="/admin/dashboard" className="btn-secondary !px-4 !py-2">
+        <header className="sticky top-0 z-30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0 border-b border-slate-200 bg-white px-4 py-3">
+          <Link to="/admin/dashboard" className="btn-secondary w-full sm:w-auto !px-4 !py-2 justify-center">
             <FaArrowLeft /> Back to Dashboard
           </Link>
           <div className="flex flex-wrap gap-2">
-            <button type="button" className="btn-secondary !px-3 !py-2" onClick={handleReceipt}>
+            <button type="button" className="btn-secondary flex-1 sm:flex-none justify-center !px-3 !py-2" onClick={handleReceipt}>
               <FaDownload /> Receipt
             </button>
-            <button type="button" className="btn-secondary !px-3 !py-2" onClick={() => setEditing(true)}>
+            <button type="button" className="btn-secondary flex-1 sm:flex-none justify-center !px-3 !py-2" onClick={() => setEditing(true)}>
               <FaEdit /> Edit
             </button>
-            <button type="button" className="btn-secondary !px-3 !py-2 text-blue-700" onClick={handleResend} disabled={resending}>
+            <button type="button" className="btn-secondary flex-1 sm:flex-none justify-center !px-3 !py-2 text-blue-700" onClick={handleResend} disabled={resending}>
               <FaMailBulk /> {resending ? "Sending..." : "Resend Email"}
             </button>
-            <button type="button" className="btn-danger !px-3 !py-2" onClick={() => setConfirmDelete(true)}>
+            <button type="button" className="btn-danger flex-1 sm:flex-none justify-center !px-3 !py-2" onClick={() => setConfirmDelete(true)}>
               <FaTrash /> Delete
             </button>
           </div>
@@ -226,7 +226,7 @@ export default function StudentDetails() {
           ))}
 
           {/* Mail logs */}
-          <div className="card p-6">
+          <div className="card p-4 sm:p-6">
             <h2 className="section-title mb-5">Email Logs</h2>
             {mailLogs.length === 0 ? (
               <p className="text-sm text-slate-400">No emails recorded for this student yet.</p>

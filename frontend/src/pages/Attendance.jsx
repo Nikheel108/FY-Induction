@@ -31,10 +31,10 @@ export default function Attendance() {
   return (
     <div className="flex min-h-screen flex-col bg-slate-50">
       <Navbar />
-      <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-12">
-        <div className="card p-8">
-          <h1 className="text-2xl font-extrabold text-slate-900">Mark Attendance</h1>
-          <p className="mt-2 text-sm text-slate-500">
+      <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-8 sm:py-12">
+        <div className="card p-6 sm:p-8">
+          <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900">Mark Attendance</h1>
+          <p className="mt-2 text-xs sm:text-sm text-slate-500">
             Enter your PRN to mark attendance for today.
           </p>
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">

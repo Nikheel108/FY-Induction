@@ -79,13 +79,13 @@ export default function AdminAttendance() {
         </header>
 
         <main className="mx-auto w-full max-w-7xl flex-1 p-4 sm:p-6">
-          <div className="card p-5">
+          <div className="card p-4 sm:p-5">
             {/* Filters and Export buttons */}
-            <div className="flex flex-wrap items-end gap-3 border-b border-slate-200 pb-4">
+            <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-end gap-3 border-b border-slate-200 pb-4">
               <input
                 type="text"
                 name="student_name"
-                className="input-field !w-auto min-w-[150px]"
+                className="input-field w-full sm:w-auto min-w-[150px]"
                 placeholder="Student name"
                 value={filters.student_name}
                 onChange={handleFilterChange}
@@ -93,21 +93,21 @@ export default function AdminAttendance() {
               <input
                 type="date"
                 name="date"
-                className="input-field !w-auto"
+                className="input-field w-full sm:w-auto"
                 value={filters.date}
                 onChange={handleFilterChange}
               />
               <input
                 type="text"
                 name="prn"
-                className="input-field !w-auto"
+                className="input-field w-full sm:w-auto"
                 placeholder="PRN"
                 value={filters.prn}
                 onChange={handleFilterChange}
               />
               <button
                 type="button"
-                className="btn-secondary !px-3 !py-2"
+                className="btn-secondary !px-3 !py-2 w-full sm:w-auto justify-center"
                 onClick={() => {
                   setFilters({ date: '', prn: '', student_name: '' });
                   setPage(1);
@@ -117,17 +117,17 @@ export default function AdminAttendance() {
               </button>
 
               {/* Export buttons */}
-              <div className="ml-auto flex gap-2">
+              <div className="mt-2 sm:mt-0 sm:ml-auto flex flex-col sm:flex-row gap-2">
                 <button
                   type="button"
-                  className="btn-secondary !px-3 !py-2 text-emerald-700"
+                  className="btn-secondary !px-3 !py-2 text-emerald-700 w-full sm:w-auto justify-center"
                   onClick={() => handleExport('excel')}
                 >
                   <FaFileExcel /> Excel
                 </button>
                 <button
                   type="button"
-                  className="btn-secondary !px-3 !py-2"
+                  className="btn-secondary !px-3 !py-2 w-full sm:w-auto justify-center"
                   onClick={() => handleExport('csv')}
                 >
                   <FaDownload /> CSV
@@ -175,7 +175,7 @@ export default function AdminAttendance() {
 
             {/* Pagination */}
             {!loading && pages > 1 && (
-              <div className="flex items-center justify-between border-t border-slate-200 pt-3">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-200 pt-3 mt-3">
                 <p className="text-xs text-slate-500">
                   Showing {records.length} of {total} records
                 </p>

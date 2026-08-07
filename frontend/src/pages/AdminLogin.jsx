@@ -37,9 +37,9 @@ export default function AdminLogin() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 px-4 py-8 sm:py-12">
       <div className="w-full max-w-md">
-        <div className="card p-8">
+        <div className="card p-6 sm:p-8">
           <div className="mb-6 text-center">
             <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-primary-700 text-white">
               <FaUserShield className="text-3xl" />

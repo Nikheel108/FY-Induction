@@ -34,7 +34,7 @@ export default function Footer() {
           <h4 className="text-sm font-bold text-slate-900">Contact</h4>
           <ul className="mt-3 space-y-2 text-sm text-slate-500">
             <li className="flex items-center gap-2"><FaMapMarkerAlt /> Alandi, Pune, Maharashtra</li>
-            <li className="flex items-center gap-2"><FaPhone /> +91-XXXX-XXXXXX</li>
+            <li className="flex items-center gap-2"><FaPhone /> +91-82178-59747</li>
             <li className="flex items-center gap-2"><FaEnvelope /> induction@mitaoe.ac.in</li>
           </ul>
         </div>
