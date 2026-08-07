@@ -1,4 +1,4 @@
-﻿"""
+"""
 Configuration module for the Student Induction Management System.
 
 All sensitive / environment specific values are read from the ``.env`` file
@@ -37,12 +37,18 @@ class Config:
     DB_USER = os.getenv("DB_USER", "root")
     DB_PASSWORD = os.getenv("DB_PASSWORD", "")
 
-    # SQLAlchemy connection string. ``charset`` and ``unix_socket`` alternatives
-    # are intentionally omitted because we always talk TCP on Windows/XAMPP.
-    SQLALCHEMY_DATABASE_URI = (
-        f"mysql+pymysql://{DB_USER}:{urllib.parse.quote_plus(DB_PASSWORD)}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
-        "?charset=utf8mb4"
-    )
+    # SQLAlchemy connection string.
+    # Uses DATABASE_URL if provided (e.g., from Supabase), otherwise builds a PostgreSQL URL.
+    database_url = os.getenv("DATABASE_URL")
+    if database_url:
+        # SQLAlchemy requires 'postgresql://', but some providers still use 'postgres://'
+        if database_url.startswith("postgres://"):
+            database_url = database_url.replace("postgres://", "postgresql://", 1)
+        SQLALCHEMY_DATABASE_URI = database_url
+    else:
+        SQLALCHEMY_DATABASE_URI = (
+            f"postgresql+psycopg2://{DB_USER}:{urllib.parse.quote_plus(DB_PASSWORD)}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+        )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": True, "pool_recycle": 280}
 
