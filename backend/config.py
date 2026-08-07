@@ -26,7 +26,7 @@ class Config:
     # CORS: the origin(s) allowed to talk to this API. FRONTEND_URL is read from
     # .env and used for local development (http://localhost:5173).
     FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
-    ALLOWED_ORIGINS = [origin.strip() for origin in
+    ALLOWED_ORIGINS = [origin.strip().rstrip("/") for origin in
                        os.getenv("ALLOWED_ORIGINS", FRONTEND_URL).split(",")
                        if origin.strip()]
 
