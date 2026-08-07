@@ -1,238 +1,146 @@
-# Student Induction Management System
+<div align="center">
+  <img src="https://mitaoe.ac.in/assets/images/logo.png" alt="MITAOE Logo" width="300" />
+  <h1>Student Induction Management System</h1>
+  <p>A full-stack, mobile-responsive web application designed to automate the <strong>First Year Induction Program registration</strong> at MIT Academy of Engineering.</p>
+</div>
 
-A full-stack web application that automates the **First Year Induction Program
-registration** for a college. Students fill a validated registration form, their
-details are stored in **MySQL**, and personalised **welcome emails (with PDF
-attachments)** are sent automatically to both the student and the parent.
-An **admin dashboard** provides statistics, search/filter, edit/delete,
-email re-sending and CSV/Excel export.
+---
 
-### Data collected per registration
+## 🌟 Overview
 
-* PRN
-* Name
-* Student Email
-* Mobile
-* Parent Name
-* Parent Mobile
-* Parent Email
-* Department — **Computer Science and Engineering (AI & ML)** (only option)
+This platform streamlines the onboarding process for new students. Students complete a validated registration form (including a live photo capture), their details are securely stored in a **PostgreSQL** database, and personalised **welcome emails (with PDF attachments & student photo embedded)** are sent automatically to both the student and their parent using **Google Apps Script**.
 
-```
-Frontend : React (Vite) + Tailwind CSS        http://localhost:5173
-Backend  : Flask REST API (SQLAlchemy)        http://localhost:5000
-Database : MySQL (local)                       localhost:3306 / induction_db
-Email    : Gmail SMTP (App Password)
+An **Admin Dashboard** empowers the college staff with powerful tools to manage the induction process effectively.
+
+## ✨ Key Features
+
+- 📸 **Live Photo Capture:** Students can take a photo via their webcam or upload a file during registration.
+- 📱 **Fully Mobile Responsive:** Flawless experience across all devices, from desktop to mobile.
+- 📧 **Automated Emails:** Instant welcome emails to students and parents with attached schedules and maps.
+- 📢 **Admin Broadcast System:** Admins can instantly broadcast event details (Venue, Time, Program) to *all* enrolled students with a single click.
+- ✅ **Attendance Tracking:** Public and Admin-facing attendance systems to track student presence during the induction program.
+- 📊 **Admin Dashboard:** View statistics, search/filter students, edit/delete records, resend emails, and export data to **CSV/Excel**.
+- 📄 **Auto-Generated Receipts:** Dynamic PDF receipts generated on-the-fly containing the student's photo and registration details.
+
+---
+
+## 🛠️ Technology Stack
+
+```text
+Frontend : React (Vite) + Tailwind CSS        
+Backend  : Flask REST API (SQLAlchemy)       
+Database : PostgreSQL (Supabase)                       
+Email    : Google Apps Script (GAS) Web App
+Deployment: Vercel (Frontend) & Render (Backend)
 ```
 
 ---
 
-## 1. Project structure
+## 📂 Project Structure
 
-```
-student_induction/
+```text
+student_induction_program/
 ├── backend/
 │   ├── app.py                 # Flask app factory + entry point
-│   ├── config.py              # Env-driven configuration
-│   ├── models.py              # SQLAlchemy models (students, mail_logs)
+│   ├── models.py              # SQLAlchemy models (Student, MailLog, Attendance)
 │   ├── requirements.txt       # Python dependencies
-│   ├── .env                   # Your local secrets (git-ignored)
-│   ├── .env.example           # Template for the .env file
-│   ├── create_sample_docs.py  # Generates placeholder PDF attachments
+│   ├── .env                   # Local secrets (git-ignored)
 │   ├── routes/
-│   │   ├── student_routes.py  # /api/register, CRUD, statistics, receipt, mail logs
-│   │   └── admin_routes.py    # admin login / token validation
+│   │   ├── student_routes.py  # Student CRUD, stats, receipt, attendance
+│   │   └── admin_routes.py    # Admin login, token validation, broadcasts
 │   ├── services/
 │   │   ├── database.py        # SQLAlchemy instance
-│   │   ├── email_service.py   # Flask-Mail sending + PDF attachments + logging
-│   │   └── utils.py           # validation, admin tokens, receipt PDF builder
-│   └── uploads/               # schedule.pdf, campus_map.pdf, student_handbook.pdf, academic_calendar.pdf
+│   │   ├── email_service.py   # GAS Email sending + PDF attachments
+│   │   └── utils.py           # Validation, admin tokens, dynamic receipt PDF builder
+│   └── uploads/               # schedule.pdf, campus_map.pdf, etc.
 ├── frontend/
-│   ├── index.html
 │   ├── package.json
-│   ├── vite.config.js         # dev server + /api proxy to :5000
-│   ├── tailwind.config.js
-│   ├── .env.example
+│   ├── vite.config.js         # dev server + /api proxy
 │   └── src/
-│       ├── main.jsx           # entry point (router + providers)
-│       ├── App.jsx            # routes
-│       ├── constants.js       # dropdown option lists
-│       ├── context/           # AuthContext, ToastContext
-│       ├── components/        # Navbar, StudentForm, Sidebar, Modal, charts, ...
-│       ├── pages/             # Home, Register, Success, AdminLogin, AdminDashboard,
-│       │                      # StudentDetails, NotFound
-│       ├── services/          # axios instance + API functions
-│       └── utils/             # CSV / Excel exporters
-├── sql/
-│   ├── schema.sql             # CREATE DATABASE/TABLE statements
-│   └── sample_data.sql        # demo records
+│       ├── App.jsx            # Routing
+│       ├── components/        # Navbar, Sidebar, Modals, Forms
+│       ├── pages/             # Home, Register, AdminDashboard, AdminBroadcast, Attendance...
+│       └── services/          # API integrations
+├── google_apps_script.js      # GAS script for sending emails via user's Gmail
 └── README.md
 ```
 
 ---
 
-## 2. Prerequisites
+## 🚀 Local Development Setup
 
-| Tool       | Version (recommended) | Notes                        |
-|------------|-----------------------|------------------------------|
-| Python     | 3.10+                 | Backend                      |
-| Node.js    | 18+                   | Frontend                     |
-| MySQL      | 5.7 / 8.x             | MySQL Workbench or XAMPP     |
-| Gmail      | —                     | With 2-Step Verification + App Password |
+### 1. Prerequisites
+- **Python 3.11+**
+- **Node.js 18+**
+- **PostgreSQL** (Local or Supabase)
+- **Google Account** (for Google Apps Script deployment)
 
----
+### 2. Backend Setup
 
-## 3. Backend setup
+1. **Database:** Create a PostgreSQL database.
+2. **Environment Variables:**
+   ```bash
+   cd backend
+   cp .env.example .env
+   ```
+   *Edit `.env` to match your local setup:*
+   ```ini
+   DATABASE_URL=postgresql://user:password@localhost:5432/induction_db
+   GAS_WEB_APP_URL=https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec
+   ADMIN_USERNAME=admin
+   ADMIN_PASSWORD=admin@123
+   ```
+3. **Install & Run:**
+   ```bash
+   cd backend
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   pip install -r requirements.txt
+   python app.py
+   ```
+   *API will run at `http://localhost:10000`*
 
-### 3.1 Create the database
+### 3. Google Apps Script Setup
+Since Google deprecated SMTP App Passwords for new accounts, this project uses a custom GAS Web App to bypass email restrictions and payload size limits.
+1. Go to [script.google.com](https://script.google.com/).
+2. Create a new project and paste the contents of `google_apps_script.js`.
+3. Click **Deploy > New Deployment**.
+4. Set type to **Web App**, execute as **Me**, and access to **Anyone**.
+5. Copy the Web App URL and paste it into your backend `.env` file as `GAS_WEB_APP_URL`.
 
-Open MySQL and run:
-
-```sql
-CREATE DATABASE IF NOT EXISTS induction_db
-    CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-```
-
-> The tables are created automatically by the Flask app on first start
-> (`db.create_all()`). You can also run `sql/schema.sql` manually if you prefer.
-
-### 3.2 Configure environment variables
-
-```bash
-cd backend
-cp .env.example .env     # then edit .env
-```
-
-The provided local `.dev` setup uses:
-
-| Variable          | Value for this project                                |
-|-------------------|-------------------------------------------------------|
-| `DB_USER`         | `root`                                                |
-| `DB_PASSWORD`     | `Sam25/03`                                            |
-| `EMAIL_ADDRESS`   | `testsameer662@gmail.com`                             |
-| `EMAIL_PASSWORD`  | `vxxglodtoulsnlna` (Gmail App Password)               |
-| `FRONTEND_URL`    | `http://localhost:5173`                               |
-| `ADMIN_USERNAME` / `ADMIN_PASSWORD` | `admin` / `admin@123`                  |
-
-> **Note:** The database password contains a `/`. In `.env` it is read as a
-> literal string and works without quoting for this setup. If you move the
-> connection string elsewhere, URL-encode the `/` as `%2F`.
-
-### 3.3 Install dependencies and run
-
-```bash
-cd backend
-python -m venv venv
-venv\Scripts\activate          # Windows
-# source venv/bin/activate     # macOS / Linux
-
-pip install -r requirements.txt
-python app.py
-```
-
-The API now runs at **http://localhost:5000**. Health check:
-`GET http://localhost:5000/api/health`
-
-> **Missing PDF attachments?** Run `python create_sample_docs.py` to generate
-> placeholder PDFs inside `backend/uploads/`. Replace them with the real
-> schedule, campus map, handbook and academic calendar PDFs at any time — the
-> app attaches whatever exists and skips missing files without crashing.
-
----
-
-## 4. Frontend setup
+### 4. Frontend Setup
 
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
-
-The app runs at **http://localhost:5173**. In development, Vite proxies `/api`
-requests to the Flask backend on port 5000, so no CORS configuration is needed
-locally.
+*App will run at `http://localhost:5173`. In development, Vite proxies `/api` requests to the Flask backend.*
 
 ---
 
-## 5. Using the application
-
-1. Open **http://localhost:5173**.
-2. Click **Register Now**, fill the form and submit.
-3. On success you see your **Registration ID** and can download the
-   **PDF receipt**. Welcome emails (with attachments) go to the student and the
-   parent automatically.
-4. Sign in at **Admin Dashboard** (default `admin` / `admin@123` — change it in
-   `backend/.env`).
-5. In the dashboard you can: view statistics, search/filter students, view
-   details, edit, delete, **resend emails**, download **CSV / Excel** exports
-   and check the **mail logs** per student.
-
----
-
-## 6. API reference
+## 🌐 API Reference
 
 | Method | Endpoint                     | Auth   | Description                                  |
 |--------|------------------------------|--------|----------------------------------------------|
-| POST   | `/api/register`              | —      | Register a student + send welcome emails     |
-| POST   | `/api/send-email`            | —      | Re-send emails for a student                 |
-| GET    | `/api/statistics`            | —      | Total / department-wise / hostel stats       |
+| POST   | `/api/register`              | —      | Register student + send welcome emails       |
+| GET    | `/api/statistics`            | —      | Total / department-wise stats                |
+| POST   | `/api/attendance`            | —      | Mark student attendance                      |
+| GET    | `/api/admin/attendance`      | Admin  | View attendance records                      |
+| POST   | `/api/admin/broadcast`       | Admin  | Send venue/schedule emails to all students   |
 | GET    | `/api/students`              | Admin  | List with search, filters, pagination        |
-| GET    | `/api/student/<id>`          | Admin  | Single student                               |
-| PUT    | `/api/student/<id>`          | Admin  | Update student                               |
-| DELETE | `/api/student/<id>`          | Admin  | Delete student (+ mail logs)                 |
-| GET    | `/api/student/<id>/receipt`  | —      | Download registration receipt PDF            |
-| GET    | `/api/student/<id>/mail-logs`| Admin  | Email history for a student                  |
+| GET    | `/api/student/<id>`          | Admin  | Get single student                           |
+| GET    | `/api/student/<id>/receipt`  | —      | Download registration PDF receipt            |
 | POST   | `/api/admin/login`           | —      | Admin login → signed token                   |
-| GET    | `/api/admin/me`              | Admin  | Validate a stored token                      |
-| GET    | `/api/health`                | —      | Liveness check                               |
-
-All responses use the shape:
-
-```json
-{ "success": true, "message": "Student registered successfully." }
-```
-
-Errors return `{ "success": false, "message": "PRN already exists." }` with the
-appropriate HTTP status code.
 
 ---
 
-## 7. Error handling summary
+## ☁️ Deployment
 
-| Scenario                | Behaviour                                                        |
-|-------------------------|------------------------------------------------------------------|
-| Duplicate PRN / email   | 400 error with a clear message                                   |
-| Invalid email / phone   | 400 error with field-specific message                            |
-| Missing/empty required  | 400 error; never saved                                           |
-| DB connection failure   | 500 JSON error; record rolled back; app keeps running            |
-| SMTP failure            | Registration still succeeds; failure logged in `mail_logs`; admin can resend |
-| Missing attachments     | Skipped gracefully, logged to console                            |
-| Network failure         | Frontend shows a friendly toast                                  |
+- **Frontend (Vercel):** Connect your GitHub repository to Vercel. Set `VITE_API_URL` to your production backend URL.
+- **Backend (Render):** Connect your repository to Render. Use `gunicorn app:app` as the start command. Ensure you add `DATABASE_URL` and `GAS_WEB_APP_URL` in the Render environment variables.
+- **Database (Supabase):** Managed PostgreSQL database. Copy the connection string to Render.
 
 ---
 
-## 8. Deployment readiness
-
-Nothing is hardcoded. Every environment-specific value lives in environment
-variables, so moving to the cloud only requires new env values:
-
-| Piece     | Target   | Change                                                                 |
-|-----------|----------|------------------------------------------------------------------------|
-| Frontend  | Vercel   | Set `VITE_API_URL=https://<backend>.onrender.com/api` at build time; `npm run build` |
-| Backend   | Render   | `pip install -r requirements.txt`; start command `gunicorn app:app`; set env vars |
-| Database  | Railway  | Point `DB_HOST/DB_PORT/DB_NAME/DB_USER/DB_PASSWORD` at the managed MySQL |
-| Email     | Gmail    | Keep the same `EMAIL_ADDRESS` / `EMAIL_PASSWORD`                       |
-
----
-
-## 9. Common issues
-
-- **`ModuleNotFoundError: cryptography`** — the `cryptography` package is
-  required by PyMySQL for MySQL 8 auth; it is already in `requirements.txt`.
-- **CORS errors in dev** — don't worry, the Vite proxy forwards `/api` to the
-  backend, so requests are same-origin.
-- **Emails not sending** — double-check the App Password, confirm
-  `EMAIL_ADDRESS` matches the Gmail account that generated the password, and
-  enable "Less secure app access" alternatives (App Passwords are recommended).
-- **Port 5000 busy** — set `PORT=5001` in the backend `.env` and update the
-  proxy target in `frontend/vite.config.js`.
+> Built with passion for the incoming batch of FY students at MIT Academy of Engineering! 🎓
