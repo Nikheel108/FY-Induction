@@ -10,6 +10,7 @@ import StudentDetails from "./pages/StudentDetails";
 import NotFound from "./pages/NotFound";
 import Attendance from "./pages/Attendance";           // new
 import AdminAttendance from "./pages/AdminAttendance"; // new
+import AdminBroadcast from "./pages/AdminBroadcast";
 
 export default function App() {
   return (
@@ -41,6 +42,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <AdminAttendance />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/broadcast"
+        element={
+          <ProtectedRoute>
+            <AdminBroadcast />
           </ProtectedRoute>
         }
       />

@@ -9,8 +9,10 @@ Credentials are read from environment variables only.
 import logging
 
 from flask import Blueprint, current_app, jsonify, request
+import threading
 
 from services.utils import admin_required, generate_admin_token, validate_admin_token
+from services.email_service import send_broadcast_emails
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/api/admin")
 
@@ -62,5 +64,28 @@ def logout():
 
     Tokens are stateless so there is nothing to revoke server-side; the client
     simply discards the token. This endpoint exists for a clean client flow.
-    """
     return jsonify({"success": True, "message": "Logged out successfully."})
+
+
+@admin_bp.route("/broadcast", methods=["POST"])
+@admin_required
+def broadcast_email():
+    """
+    Initiate a broadcast email to all enrolled students.
+    Runs in a background thread to prevent HTTP timeouts.
+    """
+    payload = request.get_json(silent=True) or {}
+    app = current_app._get_current_object()
+    
+    # Spawn background thread
+    thread = threading.Thread(
+        target=send_broadcast_emails,
+        args=(app, payload)
+    )
+    thread.daemon = True
+    thread.start()
+    
+    return jsonify({
+        "success": True,
+        "message": "Broadcast started successfully. Emails are being sent in the background."
+    })
