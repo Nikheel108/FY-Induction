@@ -40,12 +40,8 @@ def create_app(config_class=Config):
     # --- Extensions ------------------------------------------------------------
     db.init_app(app)
 
-    # CORS: allow the configured frontend origin(s) on every /api endpoint.
-    CORS(
-        app,
-        resources={r"/api/*": {"origins": app.config["ALLOWED_ORIGINS"]}},
-        supports_credentials=True,
-    )
+    # CORS: allow any origin to talk to this API since we use Bearer tokens.
+    CORS(app, resources={r"/api/*": {"origins": "*"}})
 
     # --- Blueprints --------------------------------------------------------------
     app.register_blueprint(student_bp)
