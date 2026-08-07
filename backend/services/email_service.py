@@ -1,76 +1,57 @@
-﻿"""
-Email service.
-
-Sends the personalised welcome email to the student and the confirmation email
-to the parent immediately after registration, attaching the PDF documents
-(sharing of files inside ``backend/uploads/``) and the generated receipt.
-
-Every send attempt is recorded in the ``mail_logs`` table so failures can be
-traced. SMTP credentials are read from the environment (never hardcoded).
-"""
-
+import base64
 import logging
 import os
 from datetime import datetime
 
+import requests
 from flask import current_app
-from flask_mail import Mail, Message
 
 from models import MailLog, Student
 from services.database import db
 from services.utils import build_receipt_pdf
 
-# Lazy-initialised extension instance (bound to the app in ``app.py``).
-mail = Mail()
-
 logger = logging.getLogger(__name__)
 
 
 def _resolve_attachment(filename):
-    """
-    Return the absolute path of ``filename`` inside the uploads folder, or
-    ``None`` when the file is missing.
-    """
+    """Return absolute path of `filename` inside uploads, or None if missing."""
     upload_folder = current_app.config["UPLOAD_FOLDER"]
     path = os.path.join(upload_folder, filename)
     return path if os.path.isfile(path) else None
 
 
-def _attach_uploads(msg):
-    """
-    Attach every configured PDF that actually exists on disk.
-
-    Missing files are logged but never raise an exception, so a registration
-    never fails because an attachment is absent.
-    """
-    attached = []
-    missing = []
+def _get_base64_attachments(student):
+    """Read PDFs, build receipt, and base64-encode them for the JSON payload."""
+    attachments = []
+    
+    # 1. Static uploads (Schedule, Campus Map, etc.)
     for filename, display_name in current_app.config["EMAIL_ATTACHMENTS"]:
         path = _resolve_attachment(filename)
         if path:
             with open(path, "rb") as fh:
-                msg.attach(display_name, "application/pdf", fh.read())
-            attached.append(display_name)
+                b64_data = base64.b64encode(fh.read()).decode("utf-8")
+                attachments.append({
+                    "name": display_name,
+                    "mimeType": "application/pdf",
+                    "data": b64_data
+                })
         else:
-            missing.append(filename)
             logger.warning("Attachment not found on disk: %s", filename)
-    return attached, missing
-
-
-def _attach_receipt(msg, student):
-    """Attach the generated registration receipt PDF."""
-    msg.attach(
-        f"Registration_Receipt_{student.registration_id}.pdf",
-        "application/pdf",
-        build_receipt_pdf(student),
-    )
+            
+    # 2. Dynamic receipt
+    receipt_bytes = build_receipt_pdf(student)
+    receipt_b64 = base64.b64encode(receipt_bytes).decode("utf-8")
+    attachments.append({
+        "name": f"Registration_Receipt_{student.registration_id}.pdf",
+        "mimeType": "application/pdf",
+        "data": receipt_b64
+    })
+    
+    return attachments
 
 
 def _record_log(student_id, mail_type, status, error_message=None):
-    """
-    Persist one mail-log row. Called for both success and failure so the admin
-    dashboard always reflects reality.
-    """
+    """Persist one mail-log row."""
     log = MailLog(
         student_id=student_id,
         mail_type=mail_type,
@@ -82,14 +63,8 @@ def _record_log(student_id, mail_type, status, error_message=None):
     db.session.commit()
 
 
-def _build_student_message(student):
-    """Create and fill the welcome email for the student."""
-    msg = Message(
-        subject="Welcome to MIT Academy of Engineering",
-        recipients=[student.student_email],
-        sender=current_app.config["MAIL_DEFAULT_SENDER"],
-    )
-    msg.html = f"""
+def _build_student_html(student):
+    return f"""
     <div style="font-family:Segoe UI,Arial,sans-serif;color:#1e293b;max-width:640px">
       <div style="background:#1d4ed8;color:#fff;padding:18px 24px;border-radius:8px 8px 0 0">
         <h2 style="margin:0">Welcome to MIT Academy of Engineering</h2>
@@ -124,17 +99,10 @@ def _build_student_message(student):
       </div>
     </div>
     """
-    return msg
 
 
-def _build_parent_message(student):
-    """Create and fill the confirmation email for the parent/guardian."""
-    msg = Message(
-        subject="Registration Confirmation",
-        recipients=[student.parent_email],
-        sender=current_app.config["MAIL_DEFAULT_SENDER"],
-    )
-    msg.html = f"""
+def _build_parent_html(student):
+    return f"""
     <div style="font-family:Segoe UI,Arial,sans-serif;color:#1e293b;max-width:640px">
       <div style="background:#0f172a;color:#fff;padding:18px 24px;border-radius:8px 8px 0 0">
         <h2 style="margin:0">Registration Confirmation</h2>
@@ -152,47 +120,75 @@ def _build_parent_message(student):
       </div>
     </div>
     """
-    return msg
+
+
+def _send_via_gas(recipient, subject, html_body, attachments=None):
+    """Sends POST request to the Google Apps Script Web App."""
+    gas_url = current_app.config.get("GAS_WEB_APP_URL")
+    if not gas_url:
+        raise ValueError("GAS_WEB_APP_URL is not configured in environment.")
+        
+    payload = {
+        "recipient": recipient,
+        "subject": subject,
+        "htmlBody": html_body,
+        "attachments": attachments or []
+    }
+    
+    # GAS Web Apps always reply with a 302 redirect to a content server,
+    # so we must follow redirects to get the final JSON response.
+    response = requests.post(gas_url, json=payload, allow_redirects=True, timeout=45)
+    response.raise_for_status()
+    
+    try:
+        data = response.json()
+        if data.get("status") == "error":
+            raise ValueError(f"Google Apps Script Error: {data.get('message')}")
+    except ValueError as e:
+        if "Google Apps Script Error" in str(e):
+            raise
+        else:
+            logger.warning("GAS responded with non-JSON or weird JSON, but status was 200: %s", response.text)
 
 
 def send_registration_emails(student):
-    """
-    Send both the student welcome email and the parent confirmation email.
-
-    Each email is sent and logged independently, so a failure for one recipient
-    does not prevent the other from being attempted.
-    """
+    """Send student and parent emails via GAS and log results."""
     results = {}
+    attachments = _get_base64_attachments(student)
 
     # --- Welcome email to the student -----------------------------------------
     try:
-        student_msg = _build_student_message(student)
-        _attach_uploads(student_msg)
-        _attach_receipt(student_msg, student)
-        mail.send(student_msg)
+        _send_via_gas(
+            recipient=student.student_email,
+            subject="Welcome to MIT Academy of Engineering",
+            html_body=_build_student_html(student),
+            attachments=attachments
+        )
         _record_log(student.id, "welcome", "sent")
         results["student"] = {"status": "sent"}
-    except Exception as exc:  # noqa: BLE001 - SMTP errors are all logged
-        logger.exception("Failed to send welcome email for student %s", student.id)
+    except Exception as exc:
+        logger.exception("Failed to send welcome email for student %s via GAS", student.id)
         try:
             _record_log(student.id, "welcome", "failed", str(exc))
-        except Exception:  # noqa: BLE001
+        except Exception:
             logger.exception("Failed to record welcome email log for student %s", student.id)
         results["student"] = {"status": "failed", "error": str(exc)}
 
     # --- Confirmation email to the parent --------------------------------------
     try:
-        parent_msg = _build_parent_message(student)
-        mail.send(parent_msg)
+        _send_via_gas(
+            recipient=student.parent_email,
+            subject="Registration Confirmation",
+            html_body=_build_parent_html(student)
+        )
         _record_log(student.id, "parent", "sent")
         results["parent"] = {"status": "sent"}
-    except Exception as exc:  # noqa: BLE001
-        logger.exception("Failed to send parent email for student %s", student.id)
+    except Exception as exc:
+        logger.exception("Failed to send parent email for student %s via GAS", student.id)
         try:
             _record_log(student.id, "parent", "failed", str(exc))
-        except Exception:  # noqa: BLE001
+        except Exception:
             logger.exception("Failed to record parent email log for student %s", student.id)
         results["parent"] = {"status": "failed", "error": str(exc)}
 
     return results
-

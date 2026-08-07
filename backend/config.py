@@ -52,21 +52,9 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": True, "pool_recycle": 280}
 
-    # --- Email (Gmail SMTP) -----------------------------------------------------
-    EMAIL_ADDRESS = os.getenv("EMAIL_ADDRESS", "")
-    EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD", "")
-    SMTP_HOST = os.getenv("SMTP_HOST", "smtp.gmail.com")
-    SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
-    MAIL_USE_TLS = os.getenv("MAIL_USE_TLS", "true").lower() == "true"
-    MAIL_TIMEOUT = int(os.getenv("MAIL_TIMEOUT", "10"))
-
-    MAIL_SERVER = SMTP_HOST
-    MAIL_PORT = SMTP_PORT
-    MAIL_USE_TLS = MAIL_USE_TLS
-    MAIL_USE_SSL = False
-    MAIL_USERNAME = EMAIL_ADDRESS
-    MAIL_PASSWORD = EMAIL_PASSWORD
-    MAIL_DEFAULT_SENDER = EMAIL_ADDRESS
+    # --- Email (Google Apps Script) ---------------------------------------------
+    GAS_WEB_APP_URL = os.getenv("GAS_WEB_APP_URL", "")
+    MAIL_DEFAULT_SENDER = os.getenv("EMAIL_ADDRESS", "noreply@mitaoe.ac.in")
 
     # --- Admin ----------------------------------------------------------------
     ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
