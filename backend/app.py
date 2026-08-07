@@ -41,7 +41,7 @@ def create_app(config_class=Config):
     db.init_app(app)
 
     # CORS: allow any origin to talk to this API since we use Bearer tokens.
-    CORS(app, resources={r"/api/*": {"origins": "*"}})
+    CORS(app)
 
     # --- Blueprints --------------------------------------------------------------
     app.register_blueprint(student_bp)
