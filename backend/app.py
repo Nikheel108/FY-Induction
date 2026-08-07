@@ -16,7 +16,7 @@ import urllib.parse
 import urllib.parse
 
 from flask import Flask
-from flask_cors import CORS
+
 from config import Config
 from routes.admin_routes import admin_bp
 from routes.student_routes import student_bp
@@ -41,7 +41,13 @@ def create_app(config_class=Config):
     db.init_app(app)
 
     # CORS: allow any origin to talk to this API since we use Bearer tokens.
-    CORS(app)
+    # Using a manual after_request hook to guarantee headers are always attached.
+    @app.after_request
+    def add_cors_headers(response):
+        response.headers["Access-Control-Allow-Origin"] = "*"
+        response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS, PUT, PATCH, DELETE"
+        response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+        return response
 
     # --- Blueprints --------------------------------------------------------------
     app.register_blueprint(student_bp)
