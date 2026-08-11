@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="https://mitaoe.ac.in/assets/images/logo.png" alt="MITAOE Logo" width="280" />
+  <img src="frontend/logo.png" alt="MITAOE Logo" width="280" />
   <h1>🎓 FY Induction Management System</h1>
   <p>
     A modern, full-stack solution for managing the <strong>First Year Induction Program</strong> with a smooth, interactive experience for students and administrators.
