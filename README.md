@@ -1,14 +1,17 @@
 <div align="center">
-  <img src="frontend/logo.png" alt="MITAOE Logo" width="280" />
-  <h1>🎓 FY Induction Management System</h1>
+  <img src="frontend/public/logo.png" alt="Institution Logo" width="280" style="margin-bottom: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);" />
+  
+  <h1>🎓 Automated Event & Induction Management System</h1>
+  
   <p>
-    A modern, full-stack solution for managing the <strong>First Year Induction Program</strong> with a smooth, interactive experience for students and administrators.
+    A robust, scalable, and beautifully crafted full-stack solution for managing large-scale student induction programs, college events, and seminars. Built for speed, reliability, and an exceptional user experience.
   </p>
+
   <p>
-    <img alt="React" src="https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=white" />
-    <img alt="Flask" src="https://img.shields.io/badge/Flask-3.1-000000?logo=flask&logoColor=white" />
-    <img alt="Tailwind" src="https://img.shields.io/badge/Tailwind-CSS-06B6D4?logo=tailwindcss&logoColor=white" />
-    <img alt="PostgreSQL" src="https://img.shields.io/badge/PostgreSQL-14-4169E1?logo=postgresql&logoColor=white" />
+    <img alt="React" src="https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=white&style=for-the-badge" />
+    <img alt="Flask" src="https://img.shields.io/badge/Flask-3.1-000000?logo=flask&logoColor=white&style=for-the-badge" />
+    <img alt="Tailwind CSS" src="https://img.shields.io/badge/Tailwind-CSS-06B6D4?logo=tailwindcss&logoColor=white&style=for-the-badge" />
+    <img alt="PostgreSQL" src="https://img.shields.io/badge/PostgreSQL-14-4169E1?logo=postgresql&logoColor=white&style=for-the-badge" />
   </p>
 </div>
 
@@ -16,152 +19,127 @@
 
 ## ✨ Overview
 
-This platform simplifies the full induction journey from registration to communication and attendance tracking. Students can register quickly, upload or capture their photo, receive personalized emails, and access their induction details effortlessly. Meanwhile, admins can manage registrations, broadcast updates, monitor attendance, and export reports with a polished dashboard experience.
+This platform was designed to completely digitize and streamline the event induction journey. From seamless student registration to automated receipt generation, location-aware attendance tracking, and dynamic email broadcasting.
 
-> The experience is designed to feel fast, responsive, and engaging with animated UI transitions, modal-based workflows, live feedback, and elegant dashboard interactions.
-
----
-
-## 🚀 Dynamic Features
-
-- 📸 <strong>Live photo capture</strong> and upload support during registration
-- 📱 <strong>Responsive design</strong> for desktop, tablet, and mobile users
-- ✉️ <strong>Automated welcome emails</strong> with PDF attachments and student details
-- 📢 <strong>Admin broadcast system</strong> for instant event updates to all students
-- ✅ <strong>Attendance tracking</strong> for both public and admin views
-- 📊 <strong>Interactive admin dashboard</strong> with stats, filters, search, and export tools
-- 🧾 <strong>Auto-generated receipts</strong> with registration details and photo embed
-- ⚡ <strong>Smooth transitions</strong> and modern UI feedback including loading states, toasts, dialogs, and hover effects
+Whether you're organizing a **First Year Induction**, an **Annual Cultural Fest**, or a **Department Seminar**, this repository provides a plug-and-play foundation that any institution or department can easily adapt.
 
 ---
 
-## 🛠️ Tech Stack
+## 🚀 Key Features
 
-- <strong>Frontend:</strong> React + Vite + Tailwind CSS
-- <strong>Backend:</strong> Flask + SQLAlchemy + REST APIs
-- <strong>Database:</strong> PostgreSQL
-- <strong>Emails:</strong> Google Apps Script Web App integration
-- <strong>Deployment:</strong> Vercel for frontend and Render for backend
+### For Students:
+- 📝 **Frictionless Registration:** Fast, mobile-optimized registration form with live photo capture/upload capabilities.
+- 🧾 **Instant Receipts:** Auto-generated PDF receipts with QR codes, unique Registration IDs, and embedded profile photos.
+- 📍 **Smart Attendance:** One-click attendance marking tied to specific "Event Sessions" using precise geolocation mapping.
+- 📱 **Mobile-First Design:** A beautiful, responsive interface that works flawlessly on any device.
 
----
-
-## 📁 Project Structure
-
-```text
-FY-Induction/
-├── backend/
-│   ├── app.py
-│   ├── models.py
-│   ├── requirements.txt
-│   ├── routes/
-│   │   ├── admin_routes.py
-│   │   ├── attendance_routes.py
-│   │   └── student_routes.py
-│   ├── services/
-│   │   ├── database.py
-│   │   ├── email_service.py
-│   │   └── utils.py
-│   └── uploads/
-├── frontend/
-│   ├── package.json
-│   ├── vite.config.js
-│   └── src/
-│       ├── App.jsx
-│       ├── components/
-│       ├── context/
-│       ├── pages/
-│       └── services/
-├── sql/
-│   ├── schema.sql
-│   └── sample_data.sql
-└── README.md
-```
+### For Administrators:
+- 📊 **Live Analytics Dashboard:** Real-time statistics, department-wise charts, and registration counts.
+- 📅 **Session Management:** Create, monitor, and delete specific event sessions (e.g., "Day 1 Morning", "Day 2 Workshop").
+- 📢 **Mass Broadcasting:** Send beautifully themed, HTML-rich emails to Students, Parents, or Both. Features built-in failover support to bypass daily email limits.
+- 📥 **Data Export:** Export detailed student lists and attendance records directly to CSV or Excel.
+- 🖼️ **Highlights & Gallery:** A dynamic CMS to upload event photos and highlight descriptions to the public homepage.
 
 ---
 
-## ▶️ Getting Started
+## 🔄 The Workflow
 
-### 1. Prerequisites
+1. **Setup Session:** Admin creates an "Event Session" (e.g., Day 1 Induction) and defines the duration.
+2. **Registration:** Students register online. Their data is instantly saved, and they download their unique PDF receipt.
+3. **Attendance:** During the event, students visit the portal, select the active session, and mark their presence. The system verifies their GPS coordinates.
+4. **Communication:** Admin uses the Broadcast tool to send customized schedule updates and venue changes directly to students' and parents' inboxes.
 
+---
+
+## 🛠️ How to Setup for Your Own Department/Institution
+
+This repository is designed to be easily forkable and customizable for **any** college or department. Follow these exact steps to make it yours:
+
+### 1. Branding Customization
+- **Logo:** Replace `frontend/public/logo.png` with your institution's logo.
+- **Institution Name:** Update the institution name in `frontend/src/components/Footer.jsx` and `frontend/src/components/Navbar.jsx`.
+- **Theme Colors:** The app uses Tailwind CSS. You can modify the primary brand colors in `frontend/tailwind.config.js`.
+
+### 2. Department List Customization
+To change the list of selectable departments/branches during registration:
+- **Backend:** Open `backend/app.py` and modify the `DEPARTMENTS` list inside the configuration block.
+- **Frontend:** Open `frontend/src/pages/Registration.jsx` and update the `<select>` options for the department field.
+
+### 3. Google Apps Script (Free Mass Emailing)
+This app uses a clever workaround to send thousands of emails for free using Google Apps Script (GAS) linked to Gmail accounts.
+1. Copy the exact code from `google_apps_script.js` located in the root of this repo.
+2. Go to [script.google.com](https://script.google.com/) and paste the code.
+3. Deploy as a "Web App" (Execute as: You, Access: Anyone).
+4. Copy the Web App URL and add it to your environment variables (see below).
+> **Pro Tip:** To bypass Gmail's 100-email daily limit, create multiple scripts on different Google accounts and chain their URLs together in your `.env` file, separated by commas! The backend will automatically failover.
+
+---
+
+## 💻 Technical Setup & Installation
+
+### Prerequisites
 - Python 3.11+
 - Node.js 18+
-- PostgreSQL
-- A Google account for Apps Script deployment
+- PostgreSQL Database (Local or cloud like Supabase/Neon)
 
-### 2. Backend Setup
-
+### Backend Setup
 ```bash
 cd backend
 python -m venv venv
-source venv/bin/activate
+source venv/bin/activate  # On Windows use: venv\Scripts\activate
 pip install -r requirements.txt
+```
+
+Create a `.env` file in the `backend/` directory:
+```env
+DATABASE_URL=postgresql://user:password@localhost:5432/induction_db
+# Use comma-separated URLs for failover support
+GAS_WEB_APP_URL=https://script.google.com/macros/s/SCRIPT_1/exec,https://script.google.com/macros/s/SCRIPT_2/exec
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=your_secure_password
+```
+
+Initialize the database and run:
+```bash
+flask db upgrade  # If using Flask-Migrate, or rely on db.create_all() in app.py
 python app.py
 ```
 
-Set your environment variables such as:
-
-```env
-DATABASE_URL=postgresql://user:password@localhost:5432/induction_db
-GAS_WEB_APP_URL=https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec
-ADMIN_USERNAME=admin
-ADMIN_PASSWORD=admin@123
-```
-
-### 3. Frontend Setup
-
+### Frontend Setup
 ```bash
 cd frontend
 npm install
+```
+
+Create a `.env` file in the `frontend/` directory (if testing locally):
+```env
+VITE_API_BASE_URL=http://localhost:5000/api
+```
+
+Run the development server:
+```bash
 npm run dev
 ```
 
-The app will be available at:
+---
 
-- Frontend: http://localhost:5173
-- Backend: http://localhost:5000
+## 🤝 Contribution Guidelines
+
+We welcome contributions from developers, students, and other departments! Here is how you can contribute:
+
+1. **Fork the Repository:** Create your own copy of the project.
+2. **Create a Feature Branch:** `git checkout -b feature/AmazingFeature`
+3. **Commit your Changes:** `git commit -m 'Add some AmazingFeature'`
+4. **Push to the Branch:** `git push origin feature/AmazingFeature`
+5. **Open a Pull Request:** Submit your PR for review.
+
+### What we're looking for:
+- **UI/UX Enhancements:** Better animations, accessibility improvements, or darker themes.
+- **New Features:** Ticket generation, QR code scanning for admins, or automated WhatsApp integration.
+- **Bug Fixes:** Code optimizations, security patches, or database query improvements.
 
 ---
 
-## 🌐 API Highlights
-
-| Method | Endpoint | Purpose |
-|--------|----------|---------|
-| POST | /api/register | Register a student and trigger welcome email flow |
-| GET | /api/statistics | Fetch induction dashboard statistics |
-| POST | /api/attendance | Mark attendance |
-| GET | /api/admin/attendance | View attendance records |
-| POST | /api/admin/broadcast | Send event updates to all registered students |
-| GET | /api/students | List students with filters and search |
-| GET | /api/student/<id> | Get a single student record |
-| GET | /api/student/<id>/receipt | Download the student receipt PDF |
-| POST | /api/admin/login | Authenticate admin access |
-
----
-
-## 🎨 UI Experience
-
-The frontend is crafted to feel polished and modern with:
-
-- Smooth transitions between pages and panels
-- Animated cards and action states
-- Toast notifications for success and error feedback
-- Modal-based forms and confirmation dialogs
-- Responsive layouts that adapt naturally to different screen sizes
-
----
-
-## ☁️ Deployment
-
-- Frontend: deploy on Vercel
-- Backend: deploy on Render or any Python hosting service
-- Database: use PostgreSQL on Supabase or another managed service
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome. If you want to improve the UI, add new admin features, or strengthen the backend workflow, feel free to open a pull request.
-
----
-
-> Built with care for the incoming batch of FY students at MIT Academy of Engineering. 🎓
+<div align="center">
+  <p>Built with ❤️ for educational institutions worldwide.</p>
+</div>
