@@ -149,6 +149,7 @@ export default function AdminAttendance() {
                       <th className="px-3 py-2">Student</th>
                       <th className="px-3 py-2">PRN</th>
                       <th className="px-3 py-2">Department</th>
+                      <th className="px-3 py-2">Event Session</th>
                       <th className="px-3 py-2">Date</th>
                       <th className="px-3 py-2">IP</th>
                       <th className="px-3 py-2">Location</th>
@@ -161,6 +162,7 @@ export default function AdminAttendance() {
                         <td className="px-3 py-2 font-medium">{rec.student_name}</td>
                         <td className="px-3 py-2 font-mono text-xs">{rec.prn}</td>
                         <td className="px-3 py-2">{rec.department}</td>
+                        <td className="px-3 py-2 max-w-[150px] truncate" title={rec.event_session_title}>{rec.event_session_title}</td>
                         <td className="px-3 py-2">{rec.date}</td>
                         <td className="px-3 py-2 font-mono text-xs">{rec.session.ip}</td>
                         <td className="px-3 py-2">{rec.session.location || '—'}</td>

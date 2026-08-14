@@ -273,10 +273,11 @@ def list_attendance():
             "department": student.department if student else "-",
             "date": att.date.isoformat(),
             "status": att.status,
+            "event_session_title": att.event_session.title if att.event_session else "-",
             "session": {
-                "ip": att.session.ip_address,
-                "location": att.session.location,
-                "user_agent": att.session.user_agent
+                "ip": att.browser_session.ip_address if att.browser_session else "Unknown",
+                "location": att.browser_session.location if att.browser_session else "Unknown",
+                "user_agent": att.browser_session.user_agent if att.browser_session else "Unknown"
             }
         })
 
@@ -307,18 +308,19 @@ def export_attendance_csv():
     output = io.StringIO()
     writer = csv.writer(output)
     # Header
-    writer.writerow(['Student Name', 'PRN', 'Department', 'Date', 'Status', 'IP', 'Location', 'User Agent'])
+    writer.writerow(['Student Name', 'PRN', 'Department', 'Event Session', 'Date', 'Status', 'IP', 'Location', 'User Agent'])
     for att in records:
         student = Student.query.filter_by(prn=att.prn).first()
         writer.writerow([
             student.full_name if student else att.prn,
             att.prn,
             student.department if student else '-',
+            att.event_session.title if att.event_session else '-',
             att.date.isoformat(),
             att.status,
-            att.session.ip_address,
-            att.session.location or '',
-            att.session.user_agent or ''
+            att.browser_session.ip_address if att.browser_session else '',
+            (att.browser_session.location if att.browser_session else '') or '',
+            (att.browser_session.user_agent if att.browser_session else '') or ''
         ])
 
     output.seek(0)
@@ -345,7 +347,7 @@ def export_attendance_excel():
     ws = wb.active
     ws.title = "Attendance"
     # Headers
-    headers = ['Student Name', 'PRN', 'Department', 'Date', 'Status', 'IP', 'Location', 'User Agent']
+    headers = ['Student Name', 'PRN', 'Department', 'Event Session', 'Date', 'Status', 'IP', 'Location', 'User Agent']
     ws.append(headers)
 
     for att in records:
@@ -354,11 +356,12 @@ def export_attendance_excel():
             student.full_name if student else att.prn,
             att.prn,
             student.department if student else '-',
+            att.event_session.title if att.event_session else '-',
             att.date.isoformat(),
             att.status,
-            att.session.ip_address,
-            att.session.location or '',
-            att.session.user_agent or ''
+            att.browser_session.ip_address if att.browser_session else '',
+            (att.browser_session.location if att.browser_session else '') or '',
+            (att.browser_session.user_agent if att.browser_session else '') or ''
         ])
 
     # Save to BytesIO
