@@ -123,7 +123,7 @@ npm run dev
 
 ---
 
-## 🤝 Contribution Guidelines
+## 🤝 Contributors
 
 1. NIKHEEL C KHADAKABHAVI (  [Nikheel108](https://github.com/Nikheel108/) )
 2. SAMEER SIRSATH (  [SameerSirsath](https://github.com/SameerSirsath/) )
