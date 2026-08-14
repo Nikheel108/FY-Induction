@@ -64,9 +64,9 @@ export default function StudentForm({ defaultValues = {}, onSubmit, submitLabel 
     reader.onload = (event) => {
       const img = new Image();
       img.onload = () => {
-        // Resize down to max 400x400 to save bandwidth & db space
+        // Resize down to max 300x300 to save bandwidth & db space
         const canvas = document.createElement("canvas");
-        const MAX_SIZE = 400;
+        const MAX_SIZE = 300;
         let width = img.width;
         let height = img.height;
 
@@ -84,7 +84,7 @@ export default function StudentForm({ defaultValues = {}, onSubmit, submitLabel 
         ctx.drawImage(img, 0, 0, width, height);
 
         // Convert to highly compressed JPEG
-        const dataUrl = canvas.toDataURL("image/jpeg", 0.7);
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.6);
         setPhotoPreview(dataUrl);
         setValue("photo_base64", dataUrl, { shouldDirty: true });
       };
