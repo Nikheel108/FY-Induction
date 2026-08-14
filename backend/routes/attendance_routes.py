@@ -7,14 +7,13 @@ import io
 import json
 import logging
 import uuid
-from datetime import date, datetime
-from urllib.request import urlopen
+from datetime import date, datetime, timedelta
 
 from flask import Blueprint, jsonify, request, g, send_file
 from openpyxl import Workbook
 from sqlalchemy import or_, and_
 
-from models import Student, Session, Attendance
+from models import Student, Session, Attendance, EventSession
 from services.database import db
 from services.utils import admin_required
 
@@ -84,6 +83,74 @@ def add_session_cookie(response):
     return response
 
 
+# ----- Event Sessions (Admin) -----
+
+@attendance_bp.route("/admin/event-sessions", methods=["POST"])
+@admin_required
+def create_event_session():
+    """Create a new time-bound attendance session."""
+    data = request.get_json() or {}
+    title = data.get("title", "").strip()
+    duration = data.get("duration_minutes")
+    start_time_str = data.get("start_time")
+    
+    if not title or not duration or not start_time_str:
+        return jsonify({"success": False, "message": "Missing required fields."}), 400
+        
+    try:
+        duration = int(duration)
+        start_time = datetime.fromisoformat(start_time_str.replace("Z", "+00:00"))
+        # Store as naive UTC
+        start_time = start_time.replace(tzinfo=None)
+    except ValueError:
+        return jsonify({"success": False, "message": "Invalid duration or start time format."}), 400
+
+    es = EventSession(title=title, start_time=start_time, duration_minutes=duration)
+    db.session.add(es)
+    db.session.commit()
+    return jsonify({"success": True, "message": "Session created.", "session": es.to_dict()}), 201
+
+
+@attendance_bp.route("/admin/event-sessions", methods=["GET"])
+@admin_required
+def list_event_sessions():
+    """List all event sessions."""
+    sessions = EventSession.query.order_by(EventSession.start_time.desc()).all()
+    return jsonify({"success": True, "sessions": [s.to_dict() for s in sessions]})
+
+
+# ----- Public endpoint for active session -----
+
+@attendance_bp.route("/attendance/active-session", methods=["GET"])
+def get_active_session():
+    """
+    Returns the currently active event session.
+    Active means current UTC time is between start_time and (start_time + duration + 5 mins).
+    """
+    now = datetime.utcnow()
+    # Find the most recently started session that is still active
+    # (In case of overlap, take the most recent one)
+    sessions = EventSession.query.filter(EventSession.start_time <= now).order_by(EventSession.start_time.desc()).limit(5).all()
+    
+    for s in sessions:
+        end_time = s.start_time + timedelta(minutes=s.duration_minutes + 5)
+        if now <= end_time:
+            return jsonify({"success": True, "active_session": s.to_dict()})
+            
+    return jsonify({"success": True, "active_session": None})
+
+
+def get_current_active_session():
+    """Helper to get active session on server-side"""
+    now = datetime.utcnow()
+    sessions = EventSession.query.filter(EventSession.start_time <= now).order_by(EventSession.start_time.desc()).limit(5).all()
+    for s in sessions:
+        end_time = s.start_time + timedelta(minutes=s.duration_minutes + 5)
+        if now <= end_time:
+            return s
+    return None
+
+
 def apply_filters(query):
     """Apply query filters from request args (reused by list and export)."""
     date_str = request.args.get("date")
@@ -108,53 +175,53 @@ def apply_filters(query):
 @attendance_bp.route("/attendance", methods=["POST"])
 def submit_attendance():
     """
-    Submit attendance for today.
-    Body: {"prn": "123", "date": "2026-08-07"} (date optional, defaults today)
+    Submit attendance for the currently active session.
+    Requires PRN.
     """
-    data = request.get_json(silent=True) or {}
+    data = request.get_json() or {}
     prn = data.get("prn", "").strip()
-    date_str = data.get("date", "").strip()
 
     if not prn:
         return jsonify({"success": False, "message": "PRN is required."}), 400
 
-    # Validate date
-    if date_str:
-        try:
-            submitted_date = datetime.strptime(date_str, "%Y-%m-%d").date()
-        except ValueError:
-            return jsonify({"success": False, "message": "Invalid date format. Use YYYY-MM-DD."}), 400
-    else:
-        submitted_date = date.today()
-
-    # Only today's date is allowed
-    if submitted_date != date.today():
-        return jsonify({
-            "success": False,
-            "message": "Attendance can only be submitted for today."
-        }), 400
-
-    # Check if PRN exists in students table
+    # Validate PRN exists
     student = Student.query.filter_by(prn=prn).first()
     if not student:
-        return jsonify({"success": False, "message": "Student with this PRN not found."}), 404
+        return jsonify({"success": False, "message": "Invalid PRN. Student not found."}), 404
 
-    # Check if this session already marked attendance today
+    # Ensure there is an active session
+    active_session = get_current_active_session()
+    if not active_session:
+        return jsonify({"success": False, "message": "No active attendance session at the moment."}), 400
+
+    # Ensure this student hasn't already marked attendance for this event session
     existing = Attendance.query.filter_by(
-        session_id=g.session_obj.id,
-        date=submitted_date
+        prn=prn,
+        event_session_id=active_session.id
     ).first()
     if existing:
         return jsonify({
             "success": False,
-            "message": "This device has already marked attendance today."
+            "message": "You have already marked attendance for this session."
+        }), 400
+
+    # Ensure this browser session hasn't marked attendance for this event session yet
+    existing_browser = Attendance.query.filter_by(
+        session_id=g.session_obj.id,
+        event_session_id=active_session.id
+    ).first()
+    if existing_browser:
+        return jsonify({
+            "success": False,
+            "message": "This device has already been used to mark attendance for this session."
         }), 400
 
     # Create attendance record
     att = Attendance(
         prn=prn,
         session_id=g.session_obj.id,
-        date=submitted_date,
+        event_session_id=active_session.id,
+        date=date.today(),
         status="present"
     )
     db.session.add(att)
@@ -166,9 +233,9 @@ def submit_attendance():
         "attendance": {
             "id": att.id,
             "prn": att.prn,
+            "event_session_title": active_session.title,
             "date": att.date.isoformat(),
-            "student_name": student.full_name,
-            "department": student.department
+            "time": att.created_at.isoformat(),
         }
     }), 201
 

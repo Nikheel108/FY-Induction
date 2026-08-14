@@ -11,6 +11,7 @@ import NotFound from "./pages/NotFound";
 import Attendance from "./pages/Attendance";           // new
 import AdminAttendance from "./pages/AdminAttendance"; // new
 import AdminBroadcast from "./pages/AdminBroadcast";
+import AdminEventSessions from "./pages/AdminEventSessions";
 
 export default function App() {
   return (
@@ -50,6 +51,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <AdminBroadcast />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/sessions"
+        element={
+          <ProtectedRoute>
+            <AdminEventSessions />
           </ProtectedRoute>
         }
       />

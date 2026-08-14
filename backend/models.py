@@ -107,21 +107,43 @@ class Session(db.Model):
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
     # Relationship: one session can have many attendance records
-    attendances = db.relationship("Attendance", backref="session", lazy=True)
+    attendances = db.relationship("Attendance", backref="browser_session", lazy=True)
+
+
+class EventSession(db.Model):
+    """Admin-created time-bound sessions for attendance marking."""
+    __tablename__ = "event_sessions"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    title = db.Column(db.String(150), nullable=False)
+    start_time = db.Column(db.DateTime, nullable=False)
+    duration_minutes = db.Column(db.Integer, nullable=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+    attendances = db.relationship("Attendance", backref="event_session", lazy=True)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "title": self.title,
+            "start_time": self.start_time.isoformat() if self.start_time else None,
+            "duration_minutes": self.duration_minutes,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
 
 
 class Attendance(db.Model):
-    """Attendance record per student per day, linked to a session."""
+    """Attendance record per student per day, linked to an event session."""
     __tablename__ = "attendance"
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     prn = db.Column(db.String(30), nullable=False, index=True)
     session_id = db.Column(db.Integer, db.ForeignKey("sessions.id"), nullable=False)
+    event_session_id = db.Column(db.Integer, db.ForeignKey("event_sessions.id"), nullable=True, index=True)
     date = db.Column(db.Date, nullable=False, default=date.today)
     status = db.Column(db.String(20), nullable=False, default="present")
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
-    # Ensure one session cannot mark more than one attendance per day
-    __table_args__ = (
-        db.UniqueConstraint('session_id', 'date', name='unique_session_date'),
-    )
+    # Ensure one device session cannot mark more than one attendance per day per event session
+    # We remove the unique constraint on (session_id, date) to allow (session_id, event_session_id) but for backwards compat,
+    # we'll just handle duplication checks in the application code.
