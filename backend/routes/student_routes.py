@@ -157,14 +157,10 @@ def register_student():
             "errors": [str(exc)],
         }), 500
 
-    # Best effort: send the two emails after the row is safely persisted.
-    email_results = send_registration_emails(student)
-
     return jsonify({
         "success": True,
         "message": "Student registered successfully.",
         "student": student.to_dict(),
-        "emails": email_results,
     }), 201
 
 

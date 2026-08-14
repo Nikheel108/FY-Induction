@@ -41,7 +41,7 @@ export default function Register() {
           </h1>
           <p className="mt-2 text-xs sm:text-sm text-slate-500">
             Fill in your details below. Fields marked with <span className="text-red-500">*</span> are
-            mandatory. A confirmation email will be sent to you and your parents.
+            mandatory.
           </p>
         </div>
 
