@@ -119,6 +119,29 @@ def list_event_sessions():
     return jsonify({"success": True, "sessions": [s.to_dict() for s in sessions]})
 
 
+@attendance_bp.route("/admin/event-sessions/<int:session_id>", methods=["DELETE"])
+@admin_required
+def delete_event_session(session_id):
+    """Delete an event session."""
+    es = db.session.get(EventSession, session_id)
+    if not es:
+        return jsonify({"success": False, "message": "Event session not found."}), 404
+        
+    try:
+        # Check if attendance records exist for this session
+        count = Attendance.query.filter_by(event_session_id=session_id).count()
+        if count > 0:
+            return jsonify({"success": False, "message": f"Cannot delete session. {count} attendance records are linked to it."}), 400
+            
+        db.session.delete(es)
+        db.session.commit()
+        return jsonify({"success": True, "message": "Event session deleted successfully."})
+    except Exception as e:
+        db.session.rollback()
+        logger.exception("Failed to delete event session")
+        return jsonify({"success": False, "message": "Database error while deleting."}), 500
+
+
 # ----- Public endpoint for active session -----
 
 @attendance_bp.route("/attendance/active-session", methods=["GET"])

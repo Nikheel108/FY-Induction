@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { FaPlus, FaCalendarAlt } from "react-icons/fa";
+import { FaPlus, FaCalendarAlt, FaTrash } from "react-icons/fa";
 
 import { useToast } from "../context/ToastContext";
-import { fetchEventSessions, createEventSession } from "../services/adminService";
+import { fetchEventSessions, createEventSession, deleteEventSession } from "../services/attendanceService";
 import Sidebar from "../components/Sidebar";
 import { Link } from "react-router-dom";
 import { FaHome } from "react-icons/fa";
@@ -65,6 +65,17 @@ export default function AdminEventSessions() {
       toast.error(err.message || "Failed to create session.");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this session?")) return;
+    try {
+      await deleteEventSession(id);
+      toast.success("Event session deleted successfully!");
+      loadSessions();
+    } catch (err) {
+      toast.error(err.message || "Failed to delete session.");
     }
   };
 
@@ -168,7 +179,8 @@ export default function AdminEventSessions() {
                   <tr>
                     <th className="px-4 py-3 font-semibold rounded-tl-lg">Title</th>
                     <th className="px-4 py-3 font-semibold">Start Time (UTC)</th>
-                    <th className="px-4 py-3 font-semibold text-right rounded-tr-lg">Duration</th>
+                    <th className="px-4 py-3 font-semibold text-right">Duration</th>
+                    <th className="px-4 py-3 font-semibold text-center rounded-tr-lg">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -177,6 +189,15 @@ export default function AdminEventSessions() {
                       <td className="px-4 py-3 font-medium text-slate-800">{s.title}</td>
                       <td className="px-4 py-3">{new Date(s.start_time + 'Z').toLocaleString()}</td>
                       <td className="px-4 py-3 text-right">{s.duration_minutes} mins</td>
+                      <td className="px-4 py-3 text-center">
+                        <button
+                          onClick={() => handleDelete(s.id)}
+                          className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition"
+                          title="Delete Session"
+                        >
+                          <FaTrash />
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
