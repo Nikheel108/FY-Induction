@@ -3,8 +3,12 @@ import { FaPlus, FaCalendarAlt } from "react-icons/fa";
 
 import { useToast } from "../context/ToastContext";
 import { fetchEventSessions, createEventSession } from "../services/adminService";
+import Sidebar from "../components/Sidebar";
+import { Link } from "react-router-dom";
+import { FaHome } from "react-icons/fa";
 
 export default function AdminEventSessions() {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -65,13 +69,34 @@ export default function AdminEventSessions() {
   };
 
   return (
-    <div className="space-y-6 animate-fade-up">
-      <header>
-        <h1 className="text-2xl font-extrabold text-slate-900">Manage Event Sessions</h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Create and view time-bound attendance sessions.
-        </p>
-      </header>
+    <div className="flex min-h-screen bg-slate-100">
+      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+
+      <div className="flex min-w-0 flex-1 flex-col">
+        {/* Top bar */}
+        <header className="sticky top-0 z-30 flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              className="grid h-9 w-9 place-items-center rounded-lg text-slate-600 hover:bg-slate-100 lg:hidden"
+              onClick={() => setSidebarOpen(true)}
+              aria-label="Open menu"
+            >
+              ☰
+            </button>
+            <h1 className="text-lg font-extrabold text-slate-900">Manage Event Sessions</h1>
+          </div>
+          <Link to="/" className="btn-secondary !px-4 !py-2">
+            <FaHome /> <span className="hidden sm:inline">Portal</span>
+          </Link>
+        </header>
+
+        <main className="mx-auto w-full max-w-7xl flex-1 space-y-6 p-4 sm:p-6 animate-fade-up">
+          <header>
+            <p className="mt-1 text-sm text-slate-500">
+              Create and view time-bound attendance sessions.
+            </p>
+          </header>
 
       <div className="grid gap-6 md:grid-cols-3">
         {/* Create Session Form */}
@@ -159,7 +184,10 @@ export default function AdminEventSessions() {
             </div>
           )}
         </div>
+        </div>
       </div>
+    </main>
+    </div>
     </div>
   );
 }
