@@ -11,11 +11,9 @@ can later be served by Gunicorn on Render with only environment changes.
 
 import logging
 import os
-import urllib.parse
-import urllib.parse
-import urllib.parse
 
 from flask import Flask
+from flask_cors import CORS
 
 from config import Config
 from routes.admin_routes import admin_bp
@@ -39,6 +37,7 @@ def create_app(config_class=Config):
 
     # --- Extensions ------------------------------------------------------------
     db.init_app(app)
+    CORS(app, resources={r"/api/*": {"origins": "*"}})
 
     # CORS: allow any origin to talk to this API since we use Bearer tokens.
     # Using a manual after_request hook to guarantee headers are always attached.

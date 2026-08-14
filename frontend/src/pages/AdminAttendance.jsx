@@ -48,7 +48,8 @@ export default function AdminAttendance() {
       if (filters.prn) params.append('prn', filters.prn);
       if (filters.student_name) params.append('student_name', filters.student_name);
 
-      const url = `/api/admin/attendance/export/${format}?${params.toString()}`;
+      const baseURL = import.meta.env.VITE_API_URL || '/api';
+      const url = `${baseURL}/admin/attendance/export/${format}?${params.toString()}`;
       const token = localStorage.getItem('admin_token');
       const response = await fetch(url, {
         headers: {

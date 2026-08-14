@@ -10,9 +10,11 @@ export default function Footer() {
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:grid-cols-3">
         <div>
           <div className="flex items-center gap-2">
-            <span className="grid h-8 w-8 place-items-center rounded-md bg-primary-700 text-white">
-              <FaGraduationCap />
-            </span>
+            <img
+              src="/logo.png"
+              alt="MITAOE Logo"
+              className="h-8 w-auto object-contain flex-shrink-0"
+            />
             <span className="font-bold text-slate-900">MIT Academy of Engineering</span>
           </div>
           <p className="mt-3 text-sm leading-relaxed text-slate-500">
