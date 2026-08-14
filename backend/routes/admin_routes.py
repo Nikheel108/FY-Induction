@@ -56,14 +56,19 @@ def me():
     data = validate_admin_token(current_app._get_current_object(), token)
     return jsonify({"success": True, "username": data.get("username")})
 
+from flask import Blueprint, jsonify, request, current_app
+import threading
+
+admin_bp = Blueprint("admin", __name__)
 
 @admin_bp.route("/logout", methods=["POST"])
 def logout():
     """
     Logout endpoint.
 
-    Tokens are stateless so there is nothing to revoke server-side; the client
-    simply discards the token. This endpoint exists for a clean client flow.
+    Tokens are stateless so there is nothing to revoke server-side;
+    the client simply discards the token. This endpoint exists for a clean client flow.
+    """
     return jsonify({"success": True, "message": "Logged out successfully."})
 
 
