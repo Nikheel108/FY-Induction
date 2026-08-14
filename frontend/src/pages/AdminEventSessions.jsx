@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { FaPlus, FaCalendarAlt, FaTrash } from "react-icons/fa";
 
 import { useToast } from "../context/ToastContext";
-import { fetchEventSessions, createEventSession, deleteEventSession } from "../services/attendanceService";
+import { fetchEventSessions, createEventSession, deleteEventSession } from "../services/adminService";
 import Sidebar from "../components/Sidebar";
 import { Link } from "react-router-dom";
 import { FaHome } from "react-icons/fa";

@@ -13,3 +13,6 @@ export const createEventSession = (payload) =>
 
 export const fetchEventSessions = () =>
   api.get("/admin/event-sessions").then((res) => res.data);
+
+export const deleteEventSession = (id) =>
+  api.delete(`/admin/event-sessions/${id}`).then((res) => res.data);
