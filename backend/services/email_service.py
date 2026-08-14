@@ -125,11 +125,19 @@ def _build_parent_html(student):
     """
 
 
+_current_gas_index = 0
+
 def _send_via_gas(recipient, subject, html_body, attachments=None):
-    """Sends POST request to the Google Apps Script Web App."""
-    gas_url = current_app.config.get("GAS_WEB_APP_URL")
-    if not gas_url:
+    """Sends POST request to the Google Apps Script Web App with failover support."""
+    global _current_gas_index
+    
+    gas_urls_env = current_app.config.get("GAS_WEB_APP_URL")
+    if not gas_urls_env:
         raise ValueError("GAS_WEB_APP_URL is not configured in environment.")
+        
+    gas_urls = [u.strip() for u in gas_urls_env.split(",") if u.strip()]
+    if not gas_urls:
+        raise ValueError("No valid GAS_WEB_APP_URL found.")
         
     payload = {
         "recipient": recipient,
@@ -138,20 +146,39 @@ def _send_via_gas(recipient, subject, html_body, attachments=None):
         "attachments": attachments or []
     }
     
-    # GAS Web Apps always reply with a 302 redirect to a content server,
-    # so we must follow redirects to get the final JSON response.
-    response = requests.post(gas_url, json=payload, allow_redirects=True, timeout=45)
-    response.raise_for_status()
+    num_urls = len(gas_urls)
+    last_error = None
     
-    try:
-        data = response.json()
-        if data.get("status") == "error":
-            raise ValueError(f"Google Apps Script Error: {data.get('message')}")
-    except ValueError as e:
-        if "Google Apps Script Error" in str(e):
-            raise
-        else:
-            logger.warning("GAS responded with non-JSON or weird JSON, but status was 200: %s", response.text)
+    for i in range(num_urls):
+        idx = (_current_gas_index + i) % num_urls
+        url = gas_urls[idx]
+        
+        try:
+            # GAS Web Apps always reply with a 302 redirect to a content server,
+            # so we must follow redirects to get the final JSON response.
+            response = requests.post(url, json=payload, allow_redirects=True, timeout=45)
+            response.raise_for_status()
+            
+            try:
+                data = response.json()
+                if data.get("status") == "error":
+                    raise ValueError(f"Google Apps Script Error: {data.get('message')}")
+            except ValueError as e:
+                if "Google Apps Script Error" in str(e):
+                    raise
+                else:
+                    logger.warning("GAS responded with non-JSON or weird JSON, but status was 200: %s", response.text)
+                    
+            # Success! Remember this index as the working one
+            _current_gas_index = idx
+            return
+            
+        except Exception as e:
+            logger.warning("Failed sending via GAS URL %d: %s", idx, e)
+            last_error = e
+            
+    # If we exhaust all URLs
+    raise ValueError(f"All {num_urls} GAS URLs failed. Last error: {last_error}")
 
 
 def send_registration_emails(student):
