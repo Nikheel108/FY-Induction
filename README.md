@@ -123,20 +123,10 @@ npm run dev
 
 ---
 
-## 🤝 Contribution Guidelines
+## 🤝 Contributors
 
-We welcome contributions from developers, students, and other departments! Here is how you can contribute:
-
-1. **Fork the Repository:** Create your own copy of the project.
-2. **Create a Feature Branch:** `git checkout -b feature/AmazingFeature`
-3. **Commit your Changes:** `git commit -m 'Add some AmazingFeature'`
-4. **Push to the Branch:** `git push origin feature/AmazingFeature`
-5. **Open a Pull Request:** Submit your PR for review.
-
-### What we're looking for:
-- **UI/UX Enhancements:** Better animations, accessibility improvements, or darker themes.
-- **New Features:** Ticket generation, QR code scanning for admins, or automated WhatsApp integration.
-- **Bug Fixes:** Code optimizations, security patches, or database query improvements.
+1. NIKHEEL C KHADAKABHAVI (  [Nikheel108](https://github.com/Nikheel108/) )
+2. SAMEER SIRSATH (  [SameerSirsath](https://github.com/SameerSirsath/) )
 
 ---
 
