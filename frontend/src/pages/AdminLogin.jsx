@@ -41,10 +41,12 @@ export default function AdminLogin() {
       <div className="w-full max-w-md">
         <div className="card p-6 sm:p-8">
           <div className="mb-6 text-center">
-            <span className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-primary-700 text-white">
-              <FaUserShield className="text-3xl" />
-            </span>
-            <h1 className="mt-4 text-xl font-extrabold text-slate-900">Admin Login</h1>
+            <img
+              src="/logo.png"
+              alt="MITAOE Logo"
+              className="mx-auto h-16 w-auto object-contain mb-3"
+            />
+            <h1 className="text-xl font-extrabold text-slate-900">Admin Login</h1>
             <p className="mt-1 text-sm text-slate-500">
               MIT Academy of Engineering · Induction Portal
             </p>

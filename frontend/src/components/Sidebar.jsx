@@ -29,9 +29,11 @@ export default function Sidebar({ open, onClose }) {
   const content = (
     <>
       <div className="flex items-center gap-3 border-b border-slate-700/60 px-5 py-5">
-        <span className="grid h-10 w-10 place-items-center rounded-lg bg-primary-600 text-white">
-          <FaUsers />
-        </span>
+        <img
+          src="/logo.png"
+          alt="MITAOE Logo"
+          className="h-10 w-auto object-contain bg-white/10 p-1 rounded-lg flex-shrink-0"
+        />
         <div className="leading-tight">
           <p className="text-sm font-bold text-white">Admin Panel</p>
           <p className="text-xs text-slate-400">{username || "Administrator"}</p>

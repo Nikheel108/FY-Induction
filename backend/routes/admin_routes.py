@@ -56,10 +56,6 @@ def me():
     data = validate_admin_token(current_app._get_current_object(), token)
     return jsonify({"success": True, "username": data.get("username")})
 
-from flask import Blueprint, jsonify, request, current_app
-import threading
-
-admin_bp = Blueprint("admin", __name__)
 
 @admin_bp.route("/logout", methods=["POST"])
 def logout():
