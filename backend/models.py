@@ -146,4 +146,23 @@ class Attendance(db.Model):
 
     # Ensure one device session cannot mark more than one attendance per day per event session
     # We remove the unique constraint on (session_id, date) to allow (session_id, event_session_id) but for backwards compat,
-    # we'll just handle duplication checks in the application code.
+    # we'll just handle duplication checks in the application code.
+
+class Highlight(db.Model):
+    """Event highlights with photos and descriptions."""
+    __tablename__ = "highlights"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    title = db.Column(db.String(150), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    image_base64 = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "title": self.title,
+            "description": self.description,
+            "image_base64": self.image_base64,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }

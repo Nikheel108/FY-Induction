@@ -21,6 +21,7 @@ from routes.student_routes import student_bp
 from services import utils
 from services.database import db
 from routes.attendance_routes import attendance_bp
+from routes.highlight_routes import highlights_bp
 
 # Configure a consistent log format for terminal output.
 logging.basicConfig(
@@ -52,6 +53,7 @@ def create_app(config_class=Config):
     app.register_blueprint(student_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(attendance_bp)
+    app.register_blueprint(highlights_bp)
 
     # --- Health check -------------------------------------------------------------
     @app.get("/api/health")

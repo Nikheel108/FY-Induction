@@ -12,6 +12,8 @@ import Attendance from "./pages/Attendance";           // new
 import AdminAttendance from "./pages/AdminAttendance"; // new
 import AdminBroadcast from "./pages/AdminBroadcast";
 import AdminEventSessions from "./pages/AdminEventSessions";
+import Highlights from "./pages/Highlights";
+import AdminHighlights from "./pages/AdminHighlights";
 
 export default function App() {
   return (
@@ -21,6 +23,7 @@ export default function App() {
       <Route path="/success" element={<Success />} />
       <Route path="/admin/login" element={<AdminLogin />} />
       <Route path="/attendance" element={<Attendance />} />  {/* public attendance */}
+      <Route path="/highlights" element={<Highlights />} />  {/* public highlights gallery */}
 
       <Route
         path="/admin/dashboard"
@@ -59,6 +62,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <AdminEventSessions />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/highlights"
+        element={
+          <ProtectedRoute>
+            <AdminHighlights />
           </ProtectedRoute>
         }
       />

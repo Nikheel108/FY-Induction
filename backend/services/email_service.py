@@ -197,7 +197,7 @@ def send_registration_emails(student):
     return results
 
 
-def _build_broadcast_html(payload):
+def _build_broadcast_html(payload, greeting):
     """Build a generic HTML email template for broadcasting."""
     # Build schedule attachment string
     return f"""
@@ -206,7 +206,7 @@ def _build_broadcast_html(payload):
         <h2 style="margin:0">{payload.get('subject', 'Important Update')}</h2>
       </div>
       <div style="border:1px solid #e2e8f0;border-top:none;padding:24px">
-        <p>Dear Student,</p>
+        <p>{greeting},</p>
         <p>This is an important update regarding the <strong>{payload.get('program_name', 'First Year Induction Program')}</strong> at MIT Academy of Engineering.</p>
         
         <table style="border-collapse:collapse;margin:16px 0;width:100%;">
@@ -249,30 +249,38 @@ def send_broadcast_emails(app, payload):
                         "data": b64_data
                     })
         
-        html_body = _build_broadcast_html(payload)
         subject = payload.get("subject", "Important Update from MITAOE")
+        recipient_type = payload.get("recipient_type", "students")
         
         # Get all students
         students = Student.query.all()
-        logger.info(f"Starting broadcast to {len(students)} students.")
+        logger.info(f"Starting broadcast to {len(students)} students (type: {recipient_type}).")
         
         success_count = 0
         fail_count = 0
         
         for student in students:
-            try:
-                _send_via_gas(
-                    recipient=student.student_email,
-                    subject=subject,
-                    html_body=html_body,
-                    attachments=attachments
-                )
-                # Log success
-                _record_log(student.id, "broadcast", "sent")
-                success_count += 1
-            except Exception as e:
-                logger.error(f"Failed to send broadcast to {student.student_email}: {e}")
-                _record_log(student.id, "broadcast", "failed", str(e))
-                fail_count += 1
+            targets = []
+            if recipient_type in ("students", "both") and student.student_email:
+                targets.append((student.student_email, f"Dear {student.full_name}"))
+            if recipient_type in ("parents", "both") and student.parent_email:
+                targets.append((student.parent_email, f"Dear {student.parent_name}"))
+                
+            for email, greeting in targets:
+                try:
+                    html_body = _build_broadcast_html(payload, greeting)
+                    _send_via_gas(
+                        recipient=email,
+                        subject=subject,
+                        html_body=html_body,
+                        attachments=attachments
+                    )
+                    # Log success
+                    _record_log(student.id, "broadcast", "sent")
+                    success_count += 1
+                except Exception as e:
+                    logger.error(f"Failed to send broadcast to {email}: {e}")
+                    _record_log(student.id, "broadcast", "failed", str(e))
+                    fail_count += 1
                 
         logger.info(f"Broadcast complete. Success: {success_count}, Failed: {fail_count}")

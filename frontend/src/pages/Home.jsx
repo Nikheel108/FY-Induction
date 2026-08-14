@@ -124,10 +124,10 @@ export default function Home() {
               Register for Induction
             </Link>
             <Link
-              to="/admin/login"
+              to="/highlights"
               className="inline-flex items-center justify-center rounded-lg border border-slate-500 px-8 py-3 text-base font-semibold text-slate-200 transition hover:bg-white/10 w-full sm:w-auto"
             >
-              Admin Dashboard
+              Event Highlights
             </Link>
           </div>
 

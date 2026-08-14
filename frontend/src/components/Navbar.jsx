@@ -26,7 +26,13 @@ export default function Navbar() {
         </Link>
 
         <nav className="flex items-center gap-2 sm:gap-3">
-          <Link to="/register" className="btn-primary !px-3 !py-2 !text-xs sm:!px-5 sm:!py-2.5 sm:!text-sm whitespace-nowrap">
+          <Link to="/attendance" className="text-sm font-semibold text-slate-600 hover:text-primary-600 hidden sm:block">
+            Attendance
+          </Link>
+          <Link to="/highlights" className="text-sm font-semibold text-slate-600 hover:text-primary-600 hidden sm:block">
+            Highlights
+          </Link>
+          <Link to="/register" className="btn-primary !px-3 !py-2 !text-xs sm:!px-5 sm:!py-2.5 sm:!text-sm whitespace-nowrap ml-2">
             Register Now
           </Link>
           {/* Admin link removed */}
