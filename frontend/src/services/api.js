@@ -41,7 +41,9 @@ api.interceptors.response.use(
       (error.code === "ECONNABORTED"
         ? "Request timed out. Please try again."
         : "Network error. Could not reach the server.");
-    return Promise.reject(new Error(message));
+    const customError = new Error(message);
+    customError.response = error.response;
+    return Promise.reject(customError);
   }
 );
 

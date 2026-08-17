@@ -123,7 +123,7 @@ export default function Home() {
           </p>
           <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
             <Link to="/student-login" className="btn-primary !px-8 !py-3 !text-base w-full sm:w-auto">
-              Student Login
+              Register / Access Dashboard
             </Link>
           </div>
 
@@ -184,8 +184,8 @@ export default function Home() {
               </p>
             </div>
           </div>
-          <Link to="/register" className="btn-primary !bg-white !text-primary-700 hover:!bg-primary-50 w-full sm:w-auto mt-4 sm:mt-0">
-            <FaGraduationCap /> Register Now
+          <Link to="/student-login" className="btn-primary !bg-white !text-primary-700 hover:!bg-primary-50 w-full sm:w-auto mt-4 sm:mt-0">
+            <FaGraduationCap /> Get Started
           </Link>
         </div>
       </section>

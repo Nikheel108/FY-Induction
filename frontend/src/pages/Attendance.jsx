@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FaClock, FaCheckCircle, FaExclamationTriangle } from "react-icons/fa";
+import { FaClock, FaCheckCircle, FaExclamationTriangle, FaUserTie, FaMapMarkerAlt } from "react-icons/fa";
 
 import { useToast } from '../context/ToastContext';
 import { submitAttendance, getActiveSession } from '../services/attendanceService';
@@ -53,7 +53,7 @@ export default function Attendance() {
     if (!activeSession) return;
 
     // Calculate end time: start_time + duration + 5 mins grace period
-    const startTime = new Date(activeSession.start_time + 'Z').getTime();
+    const startTime = new Date(activeSession.start_time).getTime();
     const endTime = startTime + (activeSession.duration_minutes + 5) * 60000;
 
     const timer = setInterval(() => {
@@ -118,6 +118,20 @@ export default function Attendance() {
                 <p className="text-xs font-medium text-primary-700 mt-1 flex items-center gap-1">
                    <FaCheckCircle /> Attendance is Open
                 </p>
+                {(activeSession.resource_speaker !== "-" || activeSession.location !== "-") && (
+                  <div className="mt-3 flex flex-wrap items-center gap-4 text-xs font-medium text-primary-800">
+                    {activeSession.resource_speaker !== "-" && (
+                      <span className="flex items-center gap-1.5 bg-primary-100/50 px-2 py-1 rounded-md border border-primary-200">
+                        <FaUserTie className="text-primary-600" /> {activeSession.resource_speaker}
+                      </span>
+                    )}
+                    {activeSession.location !== "-" && (
+                      <span className="flex items-center gap-1.5 bg-primary-100/50 px-2 py-1 rounded-md border border-primary-200">
+                        <FaMapMarkerAlt className="text-primary-600" /> {activeSession.location}
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
               <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full shadow-sm border border-primary-100">
                 <FaClock className="text-amber-500 animate-pulse" />

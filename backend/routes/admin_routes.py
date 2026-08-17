@@ -92,34 +92,43 @@ def broadcast_email():
     })
 
 
-@admin_bp.route("/student/<int:student_id>/reset-password", methods=["POST"])
+@admin_bp.route("/upload-prns", methods=["POST"])
 @admin_required
-def reset_student_password(student_id):
+def upload_prns():
     """
-    Reset a student's password to a default value.
-    This also sets is_first_login = True so they are forced to change it on their next login.
+    Upload a list of valid PRNs.
+    Expects JSON: { "prns": ["PRN1", "PRN2", ...] }
     """
-    from models import Student
+    from models import ValidPRN
     from services.database import db
     
-    student = db.session.get(Student, student_id)
-    if not student:
-        return jsonify({"success": False, "message": "Student not found."}), 404
-        
     payload = request.get_json(silent=True) or {}
-    new_password = payload.get("new_password") or "password123"
+    prns = payload.get("prns", [])
     
-    student.set_password(new_password)
-    student.is_first_login = True
-    
+    if not isinstance(prns, list):
+        return jsonify({"success": False, "message": "Invalid payload format. Expected a list of PRNs."}), 400
+        
+    added = 0
+    for prn in prns:
+        prn = str(prn).strip()
+        if not prn:
+            continue
+        # Check if exists
+        exists = ValidPRN.query.filter_by(prn=prn).first()
+        if not exists:
+            vprn = ValidPRN(prn=prn)
+            db.session.add(vprn)
+            added += 1
+            
     try:
         db.session.commit()
     except Exception as exc:
         db.session.rollback()
-        logger.exception("Database error while resetting password")
+        logger.exception("Database error while uploading PRNs")
         return jsonify({"success": False, "message": "Database error.", "errors": [str(exc)]}), 500
         
     return jsonify({
         "success": True, 
-        "message": f"Password successfully reset to '{new_password}'."
+        "message": f"Successfully added {added} new PRNs.",
+        "added": added
     })

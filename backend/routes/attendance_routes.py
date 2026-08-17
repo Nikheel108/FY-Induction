@@ -369,7 +369,7 @@ def admin_mark_attendance():
         session_id=g.session_obj.id,
         event_session_id=event_session_id,
         date=date.today(),
-        status="present (manual by admin)"
+        status="present (manual)"
     )
     db.session.add(att)
     db.session.commit()

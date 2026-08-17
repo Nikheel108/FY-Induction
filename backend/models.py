@@ -186,4 +186,20 @@ class Highlight(db.Model):
             "description": self.description,
             "image_base64": self.image_base64,
             "created_at": self.created_at.isoformat() + "Z" if self.created_at else None,
+        }
+
+
+class ValidPRN(db.Model):
+    """Admin-uploaded valid PRNs that are allowed to register."""
+    __tablename__ = "valid_prns"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    prn = db.Column(db.String(30), unique=True, nullable=False, index=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "prn": self.prn,
+            "created_at": self.created_at.isoformat() + "Z" if self.created_at else None,
         }

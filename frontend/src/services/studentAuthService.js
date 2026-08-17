@@ -1,7 +1,7 @@
 import api from './api';
 
-export const studentLogin = (prn, password) =>
-  api.post('/login', { prn, password }).then(res => res.data);
+export const studentLogin = (prn) =>
+  api.post('/login', { prn }).then(res => res.data);
 
 export const studentChangePassword = (new_password) =>
   api.post('/change-password', { new_password }).then(res => res.data);

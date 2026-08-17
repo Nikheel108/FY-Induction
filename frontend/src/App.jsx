@@ -15,7 +15,6 @@ import AdminEventSessions from "./pages/AdminEventSessions";
 import Highlights from "./pages/Highlights";
 import AdminHighlights from "./pages/AdminHighlights";
 import StudentLogin from "./pages/StudentLogin";
-import StudentChangePassword from "./pages/StudentChangePassword";
 import StudentDashboard from "./pages/StudentDashboard";
 
 export default function App() {
@@ -27,7 +26,6 @@ export default function App() {
       <Route path="/admin/login" element={<AdminLogin />} />
       <Route path="/attendance" element={<Attendance />} />  {/* public attendance kiosk */}
       <Route path="/student-login" element={<StudentLogin />} />
-      <Route path="/student/change-password" element={<StudentChangePassword />} />
       <Route path="/student/register" element={<Register />} />
       <Route path="/student/dashboard" element={<StudentDashboard />} />
 

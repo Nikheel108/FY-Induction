@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { FaPlus, FaCalendarAlt, FaTrash } from "react-icons/fa";
+import { FaPlus, FaCalendarAlt, FaTrash, FaUserTie, FaMapMarkerAlt } from "react-icons/fa";
 
 import { useToast } from "../context/ToastContext";
 import { fetchEventSessions, createEventSession, deleteEventSession } from "../services/adminService";
@@ -214,9 +214,9 @@ export default function AdminEventSessions() {
                     <tr key={s.id} className="hover:bg-slate-50 transition">
                       <td className="px-4 py-3 font-medium text-slate-800">
                         {s.title}
-                        <div className="text-xs text-slate-500 font-normal mt-0.5">
-                          {s.resource_speaker !== "-" && <span className="mr-2">👤 {s.resource_speaker}</span>}
-                          {s.location !== "-" && <span>📍 {s.location}</span>}
+                        <div className="text-xs text-slate-500 font-normal mt-1 flex flex-wrap gap-3">
+                          {s.resource_speaker !== "-" && <span className="flex items-center gap-1"><FaUserTie className="text-primary-500" /> {s.resource_speaker}</span>}
+                          {s.location !== "-" && <span className="flex items-center gap-1"><FaMapMarkerAlt className="text-primary-500" /> {s.location}</span>}
                         </div>
                       </td>
                       <td className="px-4 py-3">{new Date(s.start_time).toLocaleString()}</td>

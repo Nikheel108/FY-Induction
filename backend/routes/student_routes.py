@@ -114,18 +114,21 @@ def _apply_payload(student, cleaned):
 
 @student_bp.route("/login", methods=["POST"])
 def student_login():
-    """Authenticate a student via PRN and password."""
+    """Authenticate a student via PRN only."""
     payload = request.get_json(silent=True) or {}
     prn = utils.sanitize(payload.get("prn"))
-    password = payload.get("password")
 
-    if not prn or not password:
-        return jsonify({"success": False, "message": "PRN and password are required."}), 400
+    if not prn:
+        return jsonify({"success": False, "message": "PRN is required."}), 400
 
     student = Student.query.filter_by(prn=prn).first()
-    if not student or not student.check_password(password):
-        # We don't distinguish between bad PRN or bad password
-        return jsonify({"success": False, "message": "Invalid PRN or password."}), 401
+    if not student:
+        # Check if it's a valid PRN that hasn't registered yet
+        from models import ValidPRN
+        is_valid = ValidPRN.query.filter_by(prn=prn).first()
+        if is_valid:
+            return jsonify({"success": False, "message": "PRN found, but not registered.", "needs_registration": True}), 401
+        return jsonify({"success": False, "message": "Invalid PRN. Ask admin to add your PRN."}), 401
 
     token = generate_student_token(current_app._get_current_object(), student.id, student.prn)
     
@@ -133,7 +136,7 @@ def student_login():
         "success": True,
         "message": "Login successful.",
         "token": token,
-        "is_first_login": student.is_first_login,
+        "is_first_login": False,
         "is_registered": bool(student.registration_id),
         "student": student.to_dict()
     })
@@ -142,33 +145,8 @@ def student_login():
 @student_bp.route("/change-password", methods=["POST"])
 @student_required
 def student_change_password():
-    """Allow student to change their password on first login."""
-    payload = request.get_json(silent=True) or {}
-    new_password = payload.get("new_password")
-    
-    if not new_password or len(new_password) < 6:
-        return jsonify({"success": False, "message": "Password must be at least 6 characters long."}), 400
-
-    student_id = request.student_payload["student_id"]
-    student = db.session.get(Student, student_id)
-    
-    if not student:
-        return jsonify({"success": False, "message": "Student not found."}), 404
-        
-    if not student.is_first_login:
-        return jsonify({"success": False, "message": "Password can only be changed by admin after first login."}), 403
-        
-    student.set_password(new_password)
-    student.is_first_login = False
-    
-    try:
-        db.session.commit()
-    except Exception as exc:
-        db.session.rollback()
-        logger.exception("Database error while changing password")
-        return jsonify({"success": False, "message": "Database error.", "errors": [str(exc)]}), 500
-        
-    return jsonify({"success": True, "message": "Password changed successfully."})
+    """Deprecated: No passwords anymore."""
+    return jsonify({"success": False, "message": "Passwords are no longer used."}), 400
 
 
 @student_bp.route("/me", methods=["GET"])
@@ -191,36 +169,30 @@ def student_me():
 # ---------------------------------------------------------------------------
 
 @student_bp.route("/register", methods=["POST"])
-@student_required
 def register_student():
     """
-    Complete the registration for the currently logged-in student.
-
-    Request body must be the full registration form. On success the record is
-    committed first and the welcome/parent emails are then attempted. Email
-    failures never roll back the registration; they are reported inside the
-    response and recorded in ``mail_logs``.
+    Public registration endpoint.
+    Requires PRN to be present in ValidPRN table.
     """
+    from models import ValidPRN
     payload = request.get_json(silent=True) or {}
     errors, cleaned = _validate_payload(payload)
 
-    # Make sure they are not altering their PRN
-    student_id = request.student_payload["student_id"]
-    student = db.session.get(Student, student_id)
-    
-    if not student:
-        return jsonify({"success": False, "message": "Student not found."}), 404
-        
-    if student.registration_id:
-        return jsonify({"success": False, "message": "Student is already registered."}), 400
-
-    # Ensure PRN matches what they are authenticated as
-    if cleaned["prn"] != student.prn:
-        cleaned["prn"] = student.prn  # Force PRN to match
+    prn = cleaned.get("prn")
+    if prn:
+        # Check if PRN is in ValidPRN table
+        is_valid = ValidPRN.query.filter_by(prn=prn).first()
+        if not is_valid:
+            errors.append(f"PRN {prn} is not authorized for registration. Please contact admin.")
+            
+        # Check if student is already registered
+        student = Student.query.filter_by(prn=prn).first()
+        if student:
+            errors.append("This PRN is already registered.")
 
     if not errors:
         try:
-            errors += _duplicate_errors(cleaned, exclude_id=student.id)
+            errors += _duplicate_errors(cleaned)
         except Exception as exc:
             db.session.rollback()
             logger.exception("Database error during duplicate check")
@@ -233,8 +205,12 @@ def register_student():
     if errors:
         return jsonify({"success": False, "message": errors[0], "errors": errors}), 400
 
+    student = Student()
     student.registration_id = utils.generate_registration_id()
+    student.is_first_login = False
     _apply_payload(student, cleaned)
+    
+    db.session.add(student)
 
     try:
         db.session.commit()

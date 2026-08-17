@@ -6,7 +6,6 @@ import { studentLogin } from "../services/studentAuthService";
 
 export default function StudentLogin() {
   const [prn, setPrn] = useState("");
-  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const toast = useToast();
   const navigate = useNavigate();
@@ -16,21 +15,20 @@ export default function StudentLogin() {
     setLoading(true);
 
     try {
-      const res = await studentLogin(prn, password);
+      const res = await studentLogin(prn);
       localStorage.setItem("student_token", res.token);
       localStorage.setItem("student_profile", JSON.stringify(res.student));
       
-      toast.success("Login successful!");
-      
-      if (res.is_first_login) {
-        navigate("/student/change-password");
-      } else if (!res.is_registered) {
-        navigate("/student/register");
-      } else {
-        navigate("/student/dashboard");
-      }
+      toast.success("Access granted!");
+      navigate("/student/dashboard");
     } catch (err) {
-      toast.error(err.message || "Invalid PRN or password.");
+      if (err.response?.data?.needs_registration) {
+        // Navigate to registration page with PRN in state
+        toast.info("PRN authorized. Please complete registration.");
+        navigate("/student/register", { state: { prn } });
+      } else {
+        toast.error(err.response?.data?.message || err.message || "Invalid PRN.");
+      }
     } finally {
       setLoading(false);
     }
@@ -44,10 +42,10 @@ export default function StudentLogin() {
             <FaUserGraduate className="h-8 w-8" />
           </div>
           <h1 className="mt-4 text-2xl font-bold tracking-tight text-slate-900">
-            Student Portal
+            Student Access
           </h1>
           <p className="mt-2 text-sm text-slate-500">
-            Sign in with your PRN and Password
+            Enter your PRN to access the portal
           </p>
         </div>
 
@@ -65,18 +63,6 @@ export default function StudentLogin() {
                 required
               />
             </div>
-            <div>
-              <label className="mb-1 block text-sm font-semibold text-slate-700">Password</label>
-              <input
-                type="password"
-                autoComplete="current-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
-                className="input-field"
-                required
-              />
-            </div>
 
             <button
               type="submit"
@@ -84,7 +70,7 @@ export default function StudentLogin() {
               className="btn-primary w-full justify-center !py-2.5 text-base"
             >
               <FaLock className="mr-2 opacity-70" />
-              {loading ? "Signing in..." : "Sign In"}
+              {loading ? "Verifying..." : "Access Dashboard"}
             </button>
           </form>
         </div>

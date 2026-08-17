@@ -125,68 +125,73 @@ export default function AdminAttendance() {
         <main className="mx-auto w-full max-w-7xl flex-1 p-4 sm:p-6">
           <div className="card p-4 sm:p-5">
             {/* Filters and Export buttons */}
-            <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-end gap-3 border-b border-slate-200 pb-4">
-              <input
-                type="text"
-                name="student_name"
-                className="input-field w-full sm:w-auto min-w-[150px]"
-                placeholder="Student name"
-                value={filters.student_name}
-                onChange={handleFilterChange}
-              />
-              <select
-                name="event_session_id"
-                className="input-field w-full sm:w-auto min-w-[200px]"
-                value={filters.event_session_id}
-                onChange={handleFilterChange}
-              >
-                <option value="">All Sessions</option>
-                {sessionsList.map(s => (
-                  <option key={s.id} value={s.id}>{s.title} ({new Date(s.start_time).toLocaleDateString()})</option>
-                ))}
-              </select>
-              <input
-                type="date"
-                name="date"
-                className="input-field w-full sm:w-auto"
-                value={filters.date}
-                onChange={handleFilterChange}
-              />
-              <input
-                type="text"
-                name="prn"
-                className="input-field w-full sm:w-auto"
-                placeholder="PRN"
-                value={filters.prn}
-                onChange={handleFilterChange}
-              />
-              <button
-                type="button"
-                className="btn-secondary !px-3 !py-2 w-full sm:w-auto justify-center"
-                onClick={() => {
-                  setFilters({ date: '', prn: '', student_name: '', event_session_id: '' });
-                  setPage(1);
-                }}
-              >
-                Reset
-              </button>
+            <div className="border-b border-slate-200 pb-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
+                <input
+                  type="text"
+                  name="student_name"
+                  className="input-field w-full"
+                  placeholder="Student name"
+                  value={filters.student_name}
+                  onChange={handleFilterChange}
+                />
+                <select
+                  name="event_session_id"
+                  className="input-field w-full"
+                  value={filters.event_session_id}
+                  onChange={handleFilterChange}
+                >
+                  <option value="">All Sessions</option>
+                  {sessionsList.map(s => (
+                    <option key={s.id} value={s.id}>{s.title} ({new Date(s.start_time).toLocaleDateString()})</option>
+                  ))}
+                </select>
+                <input
+                  type="date"
+                  name="date"
+                  className="input-field w-full"
+                  value={filters.date}
+                  onChange={handleFilterChange}
+                />
+                <input
+                  type="text"
+                  name="prn"
+                  className="input-field w-full"
+                  placeholder="PRN"
+                  value={filters.prn}
+                  onChange={handleFilterChange}
+                />
+              </div>
 
-              {/* Export buttons */}
-              <div className="mt-2 sm:mt-0 sm:ml-auto flex flex-col sm:flex-row gap-2">
+              <div className="flex flex-col sm:flex-row justify-between items-center gap-3">
                 <button
                   type="button"
-                  className="btn-secondary !px-3 !py-2 text-emerald-700 w-full sm:w-auto justify-center"
-                  onClick={() => handleExport('excel')}
+                  className="btn-secondary !px-4 !py-2 w-full sm:w-auto justify-center"
+                  onClick={() => {
+                    setFilters({ date: '', prn: '', student_name: '', event_session_id: '' });
+                    setPage(1);
+                  }}
                 >
-                  <FaFileExcel /> Excel
+                  Reset Filters
                 </button>
-                <button
-                  type="button"
-                  className="btn-secondary !px-3 !py-2 w-full sm:w-auto justify-center"
-                  onClick={() => handleExport('csv')}
-                >
-                  <FaDownload /> CSV
-                </button>
+
+                {/* Export buttons */}
+                <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                  <button
+                    type="button"
+                    className="btn-secondary !px-3 !py-2 text-emerald-700 w-full sm:w-auto justify-center"
+                    onClick={() => handleExport('excel')}
+                  >
+                    <FaFileExcel /> Excel
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-secondary !px-3 !py-2 w-full sm:w-auto justify-center"
+                    onClick={() => handleExport('csv')}
+                  >
+                    <FaDownload /> CSV
+                  </button>
+                </div>
               </div>
             </div>
 

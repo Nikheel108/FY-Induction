@@ -16,3 +16,6 @@ export const fetchEventSessions = () =>
 
 export const deleteEventSession = (id) =>
   api.delete(`/admin/event-sessions/${id}`).then((res) => res.data);
+
+export const uploadPrns = (prns) =>
+  api.post("/admin/upload-prns", { prns }).then((res) => res.data);

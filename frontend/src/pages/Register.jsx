@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 
 import Footer from "../components/Footer";
 import Navbar from "../components/Navbar";
@@ -17,26 +17,17 @@ export default function Register() {
   const navigate = useNavigate();
   const toast = useToast();
 
+  const location = useLocation();
+
   useEffect(() => {
-    const token = localStorage.getItem("student_token");
-    const profile = localStorage.getItem("student_profile");
-    
-    if (!token || !profile) {
+    // If they arrived from Student Access page, they have the PRN in state.
+    const prn = location.state?.prn;
+    if (!prn) {
       navigate("/student-login");
       return;
     }
-    
-    try {
-      const parsed = JSON.parse(profile);
-      if (parsed.registration_id) {
-        navigate("/student/dashboard");
-        return;
-      }
-      setStudent(parsed);
-    } catch (e) {
-      navigate("/student-login");
-    }
-  }, [navigate]);
+    setStudent({ prn });
+  }, [navigate, location.state]);
 
   const handleSubmit = async (data) => {
     setLoading(true);
@@ -44,10 +35,10 @@ export default function Register() {
       const result = await studentRegister(data);
       toast.success(result.message || "Registration successful!");
       
-      // Update local storage profile to reflect registration
-      localStorage.setItem("student_profile", JSON.stringify(result.student));
-      
-      navigate("/student/dashboard");
+      // Auto-login doesn't happen during register since it doesn't return a token anymore, 
+      // or does it? No, it just registers. Let's redirect them to login so they can access their dashboard.
+      toast.info("Please login with your PRN to access your dashboard.");
+      navigate("/student-login");
     } catch (error) {
       toast.error(error.message);
     } finally {

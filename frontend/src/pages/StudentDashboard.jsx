@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { FaUserCircle, FaFileDownload, FaSignOutAlt, FaIdCard, FaCalendarAlt, FaCheckCircle, FaClock } from "react-icons/fa";
+import { FaUserCircle, FaFileDownload, FaSignOutAlt, FaIdCard, FaCalendarAlt, FaCheckCircle, FaClock, FaMapMarkerAlt, FaUserTie } from "react-icons/fa";
 import { useToast } from "../context/ToastContext";
 import { getSchedule } from "../services/studentAuthService";
 import { submitAttendance } from "../services/attendanceService";
@@ -245,15 +245,17 @@ export default function StudentDashboard() {
                           </div>
 
                           {(session.resource_speaker !== "-" || session.location !== "-") && (
-                            <div className="text-sm text-slate-600 mb-4 space-y-1">
+                            <div className="text-sm text-slate-600 mb-5 bg-slate-50 rounded-lg p-3 border border-slate-100 space-y-2">
                               {session.resource_speaker !== "-" && (
-                                <div className="flex items-center gap-2">
-                                  <span title="Resource Speaker">👤</span> {session.resource_speaker}
+                                <div className="flex items-start gap-2.5">
+                                  <FaUserTie className="text-primary-500 mt-0.5" title="Resource Speaker" />
+                                  <span className="font-medium text-slate-700">{session.resource_speaker}</span>
                                 </div>
                               )}
                               {session.location !== "-" && (
-                                <div className="flex items-center gap-2">
-                                  <span title="Location">📍</span> {session.location}
+                                <div className="flex items-start gap-2.5">
+                                  <FaMapMarkerAlt className="text-primary-500 mt-0.5" title="Location" />
+                                  <span className="font-medium text-slate-700">{session.location}</span>
                                 </div>
                               )}
                             </div>
