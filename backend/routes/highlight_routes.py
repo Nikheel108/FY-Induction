@@ -69,7 +69,13 @@ def delete_highlight(highlight_id):
 @admin_required
 def export_highlights_pdf():
     """Generate a PDF report of all highlights grouped by Resource Speaker."""
-    highlights = Highlight.query.order_by(Highlight.resource_speaker.asc(), Highlight.created_at.desc()).all()
+    speaker_filter = request.args.get("speaker")
+    
+    query = Highlight.query
+    if speaker_filter:
+        query = query.filter(Highlight.resource_speaker == speaker_filter)
+        
+    highlights = query.order_by(Highlight.resource_speaker.asc(), Highlight.created_at.desc()).all()
     
     # Group by speaker
     grouped = {}

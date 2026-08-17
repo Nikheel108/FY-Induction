@@ -199,6 +199,11 @@ def apply_filters(query):
     name = request.args.get("student_name", "").strip()
     if name:
         query = query.filter(Student.full_name.ilike(f"%{name}%"))
+        
+    event_session_id = request.args.get("event_session_id")
+    if event_session_id:
+        query = query.filter(Attendance.event_session_id == event_session_id)
+        
     return query
 
 
@@ -323,6 +328,53 @@ def list_attendance():
             "pages": pagination.pages
         }
     })
+
+
+@attendance_bp.route("/admin/attendance/<int:attendance_id>", methods=["DELETE"])
+@admin_required
+def delete_attendance(attendance_id):
+    """Admin endpoint to demark (delete) an attendance record."""
+    att = db.session.get(Attendance, attendance_id)
+    if not att:
+        return jsonify({"success": False, "message": "Attendance record not found."}), 404
+        
+    db.session.delete(att)
+    db.session.commit()
+    return jsonify({"success": True, "message": "Attendance record deleted successfully."})
+
+
+@attendance_bp.route("/admin/attendance/mark", methods=["POST"])
+@admin_required
+def admin_mark_attendance():
+    """Admin endpoint to manually mark attendance for a student."""
+    data = request.get_json() or {}
+    prn = data.get("prn", "").strip()
+    event_session_id = data.get("event_session_id")
+
+    if not prn or not event_session_id:
+        return jsonify({"success": False, "message": "PRN and Event Session are required."}), 400
+
+    student = Student.query.filter_by(prn=prn).first()
+    if not student:
+        return jsonify({"success": False, "message": f"Student with PRN {prn} not found."}), 404
+
+    # Ensure this student hasn't already marked attendance for this event session
+    existing = Attendance.query.filter_by(prn=prn, event_session_id=event_session_id).first()
+    if existing:
+        return jsonify({"success": False, "message": f"Student {prn} is already marked present for this session."}), 400
+
+    # Create attendance record (using admin's session for audit)
+    att = Attendance(
+        prn=prn,
+        session_id=g.session_obj.id,
+        event_session_id=event_session_id,
+        date=date.today(),
+        status="present (manual by admin)"
+    )
+    db.session.add(att)
+    db.session.commit()
+
+    return jsonify({"success": True, "message": f"Successfully marked {prn} as present."}), 201
 
 
 @attendance_bp.route("/admin/attendance/export/csv", methods=["GET"])

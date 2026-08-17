@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { FaPlus, FaTrash, FaImage, FaDownload } from "react-icons/fa";
 import Sidebar from "../components/Sidebar";
 import { useToast } from "../context/ToastContext";
@@ -21,6 +21,17 @@ export default function AdminHighlights() {
     resource_speaker: ""
   });
   const [imagePreview, setImagePreview] = useState(null);
+  const [selectedSpeaker, setSelectedSpeaker] = useState("");
+
+  const uniqueSpeakers = useMemo(() => {
+    const speakers = new Set();
+    highlights.forEach(h => {
+      if (h.resource_speaker && h.resource_speaker !== "-") {
+        speakers.add(h.resource_speaker);
+      }
+    });
+    return Array.from(speakers).sort();
+  }, [highlights]);
 
   const loadHighlights = async () => {
     try {
@@ -96,6 +107,36 @@ export default function AdminHighlights() {
     }
   };
 
+  const handleExportPDF = async () => {
+    try {
+      const baseURL = import.meta.env.VITE_API_URL || '/api';
+      const url = `${baseURL}/admin/highlights/export/pdf${selectedSpeaker ? `?speaker=${encodeURIComponent(selectedSpeaker)}` : ''}`;
+      const token = localStorage.getItem('admin_token');
+      
+      toast.success("Generating PDF, please wait...");
+      
+      const response = await fetch(url, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) throw new Error('Export failed');
+      
+      const blob = await response.blob();
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `Activities_Report${selectedSpeaker ? `_${selectedSpeaker}` : ''}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(link.href);
+      toast.success('Export successful');
+    } catch (err) {
+      toast.error(err.message || 'Export failed');
+    }
+  };
+
   return (
     <div className="flex min-h-screen bg-slate-100">
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
@@ -115,14 +156,24 @@ export default function AdminHighlights() {
             <h1 className="text-lg font-extrabold text-slate-900">Manage Highlights</h1>
           </div>
           <div className="flex items-center gap-3">
-            <a 
-              href="/api/admin/highlights/export/pdf" 
-              target="_blank" 
-              rel="noreferrer"
+            <div className="hidden sm:block">
+              <select 
+                className="input-field !py-2 !text-sm"
+                value={selectedSpeaker}
+                onChange={(e) => setSelectedSpeaker(e.target.value)}
+              >
+                <option value="">All Speakers</option>
+                {uniqueSpeakers.map(sp => (
+                  <option key={sp} value={sp}>{sp}</option>
+                ))}
+              </select>
+            </div>
+            <button 
+              onClick={handleExportPDF}
               className="btn-primary !px-4 !py-2 bg-slate-800 hover:bg-slate-900 flex items-center gap-2"
             >
               <FaDownload /> <span className="hidden sm:inline">Export PDF</span>
-            </a>
+            </button>
             <Link to="/" className="btn-secondary !px-4 !py-2">
               <FaHome /> <span className="hidden sm:inline">Portal</span>
             </Link>
