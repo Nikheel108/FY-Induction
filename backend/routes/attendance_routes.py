@@ -8,6 +8,7 @@ import json
 import logging
 import uuid
 from datetime import date, datetime, timedelta
+from urllib.request import urlopen
 
 from flask import Blueprint, jsonify, request, g, send_file
 from openpyxl import Workbook
