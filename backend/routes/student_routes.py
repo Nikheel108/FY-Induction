@@ -10,7 +10,7 @@ import logging
 from flask import Blueprint, current_app, jsonify, request, send_file
 from io import BytesIO
 
-from models import MailLog, Student
+from models import MailLog, Student, EventSession
 from services import utils
 from services.database import db
 from services.email_service import send_registration_emails
@@ -252,6 +252,27 @@ def register_student():
         "message": "Student registered successfully.",
         "student": student.to_dict(),
     }), 201
+
+
+@student_bp.route("/schedule", methods=["GET"])
+def get_schedule():
+    """
+    Return all event sessions ordered by start time.
+    """
+    try:
+        sessions = EventSession.query.order_by(EventSession.start_time.asc()).all()
+        return jsonify({
+            "success": True,
+            "message": "Schedule fetched successfully.",
+            "schedule": [s.to_dict() for s in sessions],
+        })
+    except Exception as exc:
+        logger.exception("Database error while fetching schedule")
+        return jsonify({
+            "success": False,
+            "message": "Database error. Could not fetch schedule.",
+            "errors": [str(exc)],
+        }), 500
 
 
 @student_bp.route("/send-email", methods=["POST"])

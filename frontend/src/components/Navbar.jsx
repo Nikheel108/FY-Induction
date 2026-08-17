@@ -33,9 +33,6 @@ export default function Navbar() {
           <Link to="/attendance" className="text-sm font-semibold text-slate-600 hover:text-primary-600 transition-colors">
             Attendance
           </Link>
-          <Link to="/highlights" className="text-sm font-semibold text-slate-600 hover:text-primary-600 transition-colors">
-            Highlights
-          </Link>
           <Link to="/student-login" className="btn-primary !px-5 !py-2.5 !text-sm whitespace-nowrap ml-2">
             Student Login
           </Link>
@@ -59,13 +56,6 @@ export default function Navbar() {
             onClick={() => setMobileMenuOpen(false)}
           >
             Attendance
-          </Link>
-          <Link 
-            to="/highlights" 
-            className="text-base font-semibold text-slate-700 hover:text-primary-600"
-            onClick={() => setMobileMenuOpen(false)}
-          >
-            Highlights
           </Link>
           <Link 
             to="/student-login" 

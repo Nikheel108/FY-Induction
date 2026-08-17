@@ -47,9 +47,7 @@ export default function Register() {
       // Update local storage profile to reflect registration
       localStorage.setItem("student_profile", JSON.stringify(result.student));
       
-      // Persist the response so the Success page survives a refresh.
-      sessionStorage.setItem("last_registration", JSON.stringify(result));
-      navigate("/success");
+      navigate("/student/dashboard");
     } catch (error) {
       toast.error(error.message);
     } finally {

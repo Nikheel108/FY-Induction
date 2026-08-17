@@ -25,8 +25,7 @@ export default function App() {
       <Route path="/register" element={<Register />} />
       <Route path="/success" element={<Success />} />
       <Route path="/admin/login" element={<AdminLogin />} />
-      <Route path="/attendance" element={<Attendance />} />  {/* public attendance */}
-      <Route path="/highlights" element={<Highlights />} />  {/* public highlights gallery */}
+      <Route path="/attendance" element={<Attendance />} />  {/* public attendance kiosk */}
       <Route path="/student-login" element={<StudentLogin />} />
       <Route path="/student/change-password" element={<StudentChangePassword />} />
       <Route path="/student/register" element={<Register />} />
@@ -77,6 +76,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <AdminHighlights />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/highlights"
+        element={
+          <ProtectedRoute>
+            <Highlights />
           </ProtectedRoute>
         }
       />

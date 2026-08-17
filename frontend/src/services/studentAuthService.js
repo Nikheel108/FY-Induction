@@ -11,3 +11,6 @@ export const studentMe = () =>
 
 export const studentRegister = (data) =>
   api.post('/register', data).then(res => res.data);
+
+export const getSchedule = () =>
+  api.get('/schedule').then(res => res.data);

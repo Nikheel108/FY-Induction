@@ -125,12 +125,6 @@ export default function Home() {
             <Link to="/student-login" className="btn-primary !px-8 !py-3 !text-base w-full sm:w-auto">
               Student Login
             </Link>
-            <Link
-              to="/highlights"
-              className="inline-flex items-center justify-center rounded-lg border border-slate-500 px-8 py-3 text-base font-semibold text-slate-200 transition hover:bg-white/10 w-full sm:w-auto"
-            >
-              Event Highlights
-            </Link>
           </div>
 
           {stats && (
