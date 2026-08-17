@@ -14,6 +14,9 @@ import AdminBroadcast from "./pages/AdminBroadcast";
 import AdminEventSessions from "./pages/AdminEventSessions";
 import Highlights from "./pages/Highlights";
 import AdminHighlights from "./pages/AdminHighlights";
+import StudentLogin from "./pages/StudentLogin";
+import StudentChangePassword from "./pages/StudentChangePassword";
+import StudentDashboard from "./pages/StudentDashboard";
 
 export default function App() {
   return (
@@ -24,6 +27,10 @@ export default function App() {
       <Route path="/admin/login" element={<AdminLogin />} />
       <Route path="/attendance" element={<Attendance />} />  {/* public attendance */}
       <Route path="/highlights" element={<Highlights />} />  {/* public highlights gallery */}
+      <Route path="/student-login" element={<StudentLogin />} />
+      <Route path="/student/change-password" element={<StudentChangePassword />} />
+      <Route path="/student/register" element={<Register />} />
+      <Route path="/student/dashboard" element={<StudentDashboard />} />
 
       <Route
         path="/admin/dashboard"

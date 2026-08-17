@@ -26,7 +26,7 @@ const EMAIL_RULES = (required = true) => ({
  * Handles client-side validation via react-hook-form; the backend re-validates
  * everything server-side.
  */
-export default function StudentForm({ defaultValues = {}, onSubmit, submitLabel = "Submit", loading = false }) {
+export default function StudentForm({ defaultValues = {}, onSubmit, submitLabel = "Submit", loading = false, readOnlyPrn = false }) {
   const [photoPreview, setPhotoPreview] = useState(defaultValues.photo_base64 || null);
   const fileInputRef = useRef(null);
 
@@ -118,6 +118,8 @@ export default function StudentForm({ defaultValues = {}, onSubmit, submitLabel 
               {...register("prn", { required: "PRN is required" })}
               error={errors.prn}
               placeholder="e.g. PRN260101"
+              disabled={readOnlyPrn}
+              className={readOnlyPrn ? "bg-slate-100 cursor-not-allowed" : ""}
             />
           </Field>
 

@@ -36,8 +36,8 @@ export default function Navbar() {
           <Link to="/highlights" className="text-sm font-semibold text-slate-600 hover:text-primary-600 transition-colors">
             Highlights
           </Link>
-          <Link to="/register" className="btn-primary !px-5 !py-2.5 !text-sm whitespace-nowrap ml-2">
-            Register Now
+          <Link to="/student-login" className="btn-primary !px-5 !py-2.5 !text-sm whitespace-nowrap ml-2">
+            Student Login
           </Link>
         </nav>
 
@@ -68,11 +68,11 @@ export default function Navbar() {
             Highlights
           </Link>
           <Link 
-            to="/register" 
+            to="/student-login" 
             className="btn-primary w-full justify-center !py-3"
             onClick={() => setMobileMenuOpen(false)}
           >
-            Register Now
+            Student Login
           </Link>
         </nav>
       )}

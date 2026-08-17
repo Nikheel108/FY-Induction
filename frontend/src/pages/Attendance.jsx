@@ -8,6 +8,7 @@ import Footer from '../components/Footer';
 
 export default function Attendance() {
   const [prn, setPrn] = useState('');
+  const [isStudentLogged, setIsStudentLogged] = useState(false);
   const [loading, setLoading] = useState(false);
   const [activeSession, setActiveSession] = useState(null);
   const [sessionLoading, setSessionLoading] = useState(true);
@@ -15,6 +16,19 @@ export default function Attendance() {
   const [isExpired, setIsExpired] = useState(false);
   
   const toast = useToast();
+
+  useEffect(() => {
+    const profileStr = localStorage.getItem("student_profile");
+    if (profileStr) {
+      try {
+        const parsed = JSON.parse(profileStr);
+        if (parsed.prn) {
+          setPrn(parsed.prn);
+          setIsStudentLogged(true);
+        }
+      } catch(e) {}
+    }
+  }, []);
 
   useEffect(() => {
     const fetchSession = async () => {
@@ -122,14 +136,20 @@ export default function Attendance() {
                   <label className="block text-sm font-semibold text-slate-700">Permanent Registration Number (PRN)</label>
                   <input
                     type="text"
-                    className="input-field mt-1 text-lg py-3"
+                    className={`input-field mt-1 text-lg py-3 ${isStudentLogged ? 'bg-slate-100' : ''}`}
                     value={prn}
                     onChange={(e) => setPrn(e.target.value)}
                     placeholder="e.g. PRN260101"
-                    disabled={loading || isExpired}
-                    autoFocus
+                    disabled={loading || isExpired || isStudentLogged}
+                    autoFocus={!isStudentLogged}
                   />
                 </div>
+                
+                {isStudentLogged && (
+                  <p className="text-xs text-slate-500 font-medium">
+                    Marking attendance as <span className="font-bold text-slate-700">{prn}</span>.
+                  </p>
+                )}
                 
                 <button
                   type="submit"

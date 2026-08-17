@@ -12,6 +12,7 @@ Two tables are defined:
 """
 
 from datetime import datetime, date
+from werkzeug.security import generate_password_hash, check_password_hash
 
 from services.database import db
 
@@ -22,19 +23,23 @@ class Student(db.Model):
     __tablename__ = "students"
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    registration_id = db.Column(db.String(50), unique=True, nullable=False, index=True)
+    registration_id = db.Column(db.String(50), unique=True, nullable=True, index=True)
 
     # --- Student information ---
-    full_name = db.Column(db.String(150), nullable=False)
+    full_name = db.Column(db.String(150), nullable=True)
     prn = db.Column(db.String(30), unique=True, nullable=False, index=True)
-    department = db.Column(db.String(150), nullable=False, index=True)
-    student_email = db.Column(db.String(150), unique=True, nullable=False, index=True)
-    student_phone = db.Column(db.String(20), nullable=False)
+    department = db.Column(db.String(150), nullable=True, index=True)
+    student_email = db.Column(db.String(150), unique=True, nullable=True, index=True)
+    student_phone = db.Column(db.String(20), nullable=True)
 
     # --- Parent information ---
-    parent_name = db.Column(db.String(150), nullable=False)
-    parent_email = db.Column(db.String(150), nullable=False)
-    parent_phone = db.Column(db.String(20), nullable=False)
+    parent_name = db.Column(db.String(150), nullable=True)
+    parent_email = db.Column(db.String(150), nullable=True)
+    parent_phone = db.Column(db.String(20), nullable=True)
+
+    # --- Authentication ---
+    password_hash = db.Column(db.String(255), nullable=True)
+    is_first_login = db.Column(db.Boolean, nullable=False, default=True)
 
     # --- Media ---
     photo_base64 = db.Column(db.Text, nullable=True)
@@ -63,9 +68,19 @@ class Student(db.Model):
             "parent_email": self.parent_email,
             "parent_phone": self.parent_phone,
             "photo_base64": self.photo_base64,
+            "is_first_login": self.is_first_login,
+            "is_registered": bool(self.registration_id),
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        if not self.password_hash:
+            return False
+        return check_password_hash(self.password_hash, password)
 
 
 class MailLog(db.Model):

@@ -22,6 +22,7 @@ import {
   getStudent,
   resendEmail,
   updateStudent,
+  resetStudentPassword,
 } from "../services/studentService";
 
 /**
@@ -41,6 +42,7 @@ export default function StudentDetails() {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [resending, setResending] = useState(false);
+  const [resettingPassword, setResettingPassword] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -101,6 +103,21 @@ export default function StudentDetails() {
       toast.error(error.message);
     } finally {
       setResending(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    if (!window.confirm(`Reset password for ${student.full_name} to 'password123'?`)) {
+      return;
+    }
+    setResettingPassword(true);
+    try {
+      const result = await resetStudentPassword(id, "password123");
+      toast.success(result.message);
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setResettingPassword(false);
     }
   };
 
@@ -169,6 +186,9 @@ export default function StudentDetails() {
             </button>
             <button type="button" className="btn-danger flex-1 sm:flex-none justify-center !px-3 !py-2" onClick={() => setConfirmDelete(true)}>
               <FaTrash /> Delete
+            </button>
+            <button type="button" className="btn-secondary flex-1 sm:flex-none justify-center !px-3 !py-2 text-amber-700 border-amber-200 bg-amber-50" onClick={handleResetPassword} disabled={resettingPassword}>
+              {resettingPassword ? "Resetting..." : "Reset Password"}
             </button>
           </div>
         </header>

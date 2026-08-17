@@ -14,7 +14,7 @@ from models import MailLog, Student
 from services import utils
 from services.database import db
 from services.email_service import send_registration_emails
-from services.utils import admin_required
+from services.utils import admin_required, student_required, generate_student_token
 
 student_bp = Blueprint("student", __name__, url_prefix="/api")
 
@@ -109,13 +109,92 @@ def _apply_payload(student, cleaned):
 
 
 # ---------------------------------------------------------------------------
+# Student Authentication
+# ---------------------------------------------------------------------------
+
+@student_bp.route("/login", methods=["POST"])
+def student_login():
+    """Authenticate a student via PRN and password."""
+    payload = request.get_json(silent=True) or {}
+    prn = utils.sanitize(payload.get("prn"))
+    password = payload.get("password")
+
+    if not prn or not password:
+        return jsonify({"success": False, "message": "PRN and password are required."}), 400
+
+    student = Student.query.filter_by(prn=prn).first()
+    if not student or not student.check_password(password):
+        # We don't distinguish between bad PRN or bad password
+        return jsonify({"success": False, "message": "Invalid PRN or password."}), 401
+
+    token = generate_student_token(current_app._get_current_object(), student.id, student.prn)
+    
+    return jsonify({
+        "success": True,
+        "message": "Login successful.",
+        "token": token,
+        "is_first_login": student.is_first_login,
+        "is_registered": bool(student.registration_id),
+        "student": student.to_dict()
+    })
+
+
+@student_bp.route("/change-password", methods=["POST"])
+@student_required
+def student_change_password():
+    """Allow student to change their password on first login."""
+    payload = request.get_json(silent=True) or {}
+    new_password = payload.get("new_password")
+    
+    if not new_password or len(new_password) < 6:
+        return jsonify({"success": False, "message": "Password must be at least 6 characters long."}), 400
+
+    student_id = request.student_payload["student_id"]
+    student = db.session.get(Student, student_id)
+    
+    if not student:
+        return jsonify({"success": False, "message": "Student not found."}), 404
+        
+    if not student.is_first_login:
+        return jsonify({"success": False, "message": "Password can only be changed by admin after first login."}), 403
+        
+    student.set_password(new_password)
+    student.is_first_login = False
+    
+    try:
+        db.session.commit()
+    except Exception as exc:
+        db.session.rollback()
+        logger.exception("Database error while changing password")
+        return jsonify({"success": False, "message": "Database error.", "errors": [str(exc)]}), 500
+        
+    return jsonify({"success": True, "message": "Password changed successfully."})
+
+
+@student_bp.route("/me", methods=["GET"])
+@student_required
+def student_me():
+    """Return the current student's profile."""
+    student_id = request.student_payload["student_id"]
+    student = db.session.get(Student, student_id)
+    if not student:
+        return jsonify({"success": False, "message": "Student not found."}), 404
+        
+    return jsonify({
+        "success": True,
+        "student": student.to_dict()
+    })
+
+
+# ---------------------------------------------------------------------------
 # Public endpoints
 # ---------------------------------------------------------------------------
 
 @student_bp.route("/register", methods=["POST"])
+@student_required
 def register_student():
     """
-    Register a new student.
+    Complete the registration for the currently logged-in student.
 
     Request body must be the full registration form. On success the record is
     committed first and the welcome/parent emails are then attempted. Email
@@ -125,12 +204,24 @@ def register_student():
     payload = request.get_json(silent=True) or {}
     errors, cleaned = _validate_payload(payload)
 
-    # Only hit the database for duplicate checks when the payload is otherwise
-    # valid, so a malformed form is rejected without any DB work.
+    # Make sure they are not altering their PRN
+    student_id = request.student_payload["student_id"]
+    student = db.session.get(Student, student_id)
+    
+    if not student:
+        return jsonify({"success": False, "message": "Student not found."}), 404
+        
+    if student.registration_id:
+        return jsonify({"success": False, "message": "Student is already registered."}), 400
+
+    # Ensure PRN matches what they are authenticated as
+    if cleaned["prn"] != student.prn:
+        cleaned["prn"] = student.prn  # Force PRN to match
+
     if not errors:
         try:
-            errors += _duplicate_errors(payload)
-        except Exception as exc:  # noqa: BLE001 - DB connectivity / constraint errors
+            errors += _duplicate_errors(cleaned, exclude_id=student.id)
+        except Exception as exc:
             db.session.rollback()
             logger.exception("Database error during duplicate check")
             return jsonify({
@@ -142,13 +233,12 @@ def register_student():
     if errors:
         return jsonify({"success": False, "message": errors[0], "errors": errors}), 400
 
-    student = Student(registration_id=utils.generate_registration_id())
+    student.registration_id = utils.generate_registration_id()
     _apply_payload(student, cleaned)
 
     try:
-        db.session.add(student)
         db.session.commit()
-    except Exception as exc:  # noqa: BLE001 - DB connectivity / constraint errors
+    except Exception as exc:
         db.session.rollback()
         logger.exception("Database error while registering student")
         return jsonify({

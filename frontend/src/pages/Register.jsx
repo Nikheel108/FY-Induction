@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
 import Footer from "../components/Footer";
 import Navbar from "../components/Navbar";
 import StudentForm from "../components/StudentForm";
 import { useToast } from "../context/ToastContext";
-import { registerStudent } from "../services/studentService";
+import { studentRegister } from "../services/studentAuthService";
 
 /**
  * Public registration page. Submits the full form to POST /api/register and
@@ -13,14 +13,40 @@ import { registerStudent } from "../services/studentService";
  */
 export default function Register() {
   const [loading, setLoading] = useState(false);
+  const [student, setStudent] = useState(null);
   const navigate = useNavigate();
   const toast = useToast();
+
+  useEffect(() => {
+    const token = localStorage.getItem("student_token");
+    const profile = localStorage.getItem("student_profile");
+    
+    if (!token || !profile) {
+      navigate("/student-login");
+      return;
+    }
+    
+    try {
+      const parsed = JSON.parse(profile);
+      if (parsed.registration_id) {
+        navigate("/student/dashboard");
+        return;
+      }
+      setStudent(parsed);
+    } catch (e) {
+      navigate("/student-login");
+    }
+  }, [navigate]);
 
   const handleSubmit = async (data) => {
     setLoading(true);
     try {
-      const result = await registerStudent(data);
+      const result = await studentRegister(data);
       toast.success(result.message || "Registration successful!");
+      
+      // Update local storage profile to reflect registration
+      localStorage.setItem("student_profile", JSON.stringify(result.student));
+      
       // Persist the response so the Success page survives a refresh.
       sessionStorage.setItem("last_registration", JSON.stringify(result));
       navigate("/success");
@@ -30,6 +56,8 @@ export default function Register() {
       setLoading(false);
     }
   };
+
+  if (!student) return null;
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-100">
@@ -50,6 +78,8 @@ export default function Register() {
             onSubmit={handleSubmit}
             submitLabel="Submit Registration"
             loading={loading}
+            defaultValues={student}
+            readOnlyPrn={true}
           />
         </div>
       </main>

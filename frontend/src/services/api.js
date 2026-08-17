@@ -11,11 +11,15 @@ const api = axios.create({
   headers: { "Content-Type": "application/json" },
 });
 
-// Attach the admin token (if any) to every request.
+// Attach the appropriate token to every request.
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("admin_token");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+  const adminToken = localStorage.getItem("admin_token");
+  const studentToken = localStorage.getItem("student_token");
+  
+  if (config.url.includes("/admin") && adminToken) {
+    config.headers.Authorization = `Bearer ${adminToken}`;
+  } else if (studentToken) {
+    config.headers.Authorization = `Bearer ${studentToken}`;
   }
   return config;
 });

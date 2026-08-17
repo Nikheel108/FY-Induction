@@ -122,8 +122,8 @@ export default function Home() {
             delivered straight to your inbox.
           </p>
           <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
-            <Link to="/register" className="btn-primary !px-8 !py-3 !text-base w-full sm:w-auto">
-              Register for Induction
+            <Link to="/student-login" className="btn-primary !px-8 !py-3 !text-base w-full sm:w-auto">
+              Student Login
             </Link>
             <Link
               to="/highlights"

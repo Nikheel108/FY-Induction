@@ -90,3 +90,36 @@ def broadcast_email():
         "success": True,
         "message": "Broadcast started successfully. Emails are being sent in the background."
     })
+
+
+@admin_bp.route("/student/<int:student_id>/reset-password", methods=["POST"])
+@admin_required
+def reset_student_password(student_id):
+    """
+    Reset a student's password to a default value.
+    This also sets is_first_login = True so they are forced to change it on their next login.
+    """
+    from models import Student
+    from services.database import db
+    
+    student = db.session.get(Student, student_id)
+    if not student:
+        return jsonify({"success": False, "message": "Student not found."}), 404
+        
+    payload = request.get_json(silent=True) or {}
+    new_password = payload.get("new_password") or "password123"
+    
+    student.set_password(new_password)
+    student.is_first_login = True
+    
+    try:
+        db.session.commit()
+    except Exception as exc:
+        db.session.rollback()
+        logger.exception("Database error while resetting password")
+        return jsonify({"success": False, "message": "Database error.", "errors": [str(exc)]}), 500
+        
+    return jsonify({
+        "success": True, 
+        "message": f"Password successfully reset to '{new_password}'."
+    })
