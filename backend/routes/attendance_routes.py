@@ -93,6 +93,8 @@ def create_event_session():
     title = data.get("title", "").strip()
     duration = data.get("duration_minutes")
     start_time_str = data.get("start_time")
+    resource_speaker = data.get("resource_speaker", "-")
+    location = data.get("location", "-")
     
     if not title or not duration or not start_time_str:
         return jsonify({"success": False, "message": "Missing required fields."}), 400
@@ -105,7 +107,13 @@ def create_event_session():
     except ValueError:
         return jsonify({"success": False, "message": "Invalid duration or start time format."}), 400
 
-    es = EventSession(title=title, start_time=start_time, duration_minutes=duration)
+    es = EventSession(
+        title=title, 
+        start_time=start_time, 
+        duration_minutes=duration,
+        resource_speaker=resource_speaker,
+        location=location
+    )
     db.session.add(es)
     db.session.commit()
     return jsonify({"success": True, "message": "Session created.", "session": es.to_dict()}), 201

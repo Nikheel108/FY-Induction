@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { FaPlus, FaTrash, FaImage } from "react-icons/fa";
+import { FaPlus, FaTrash, FaImage, FaDownload } from "react-icons/fa";
 import Sidebar from "../components/Sidebar";
 import { useToast } from "../context/ToastContext";
 import { getHighlights, createHighlight, deleteHighlight } from "../services/highlightService";
@@ -17,7 +17,8 @@ export default function AdminHighlights() {
   const [formData, setFormData] = useState({
     title: "",
     description: "",
-    image_base64: ""
+    image_base64: "",
+    resource_speaker: ""
   });
   const [imagePreview, setImagePreview] = useState(null);
 
@@ -68,9 +69,12 @@ export default function AdminHighlights() {
 
     try {
       setSubmitting(true);
-      await createHighlight(formData);
+      await createHighlight({
+        ...formData,
+        resource_speaker: formData.resource_speaker || "-"
+      });
       toast.success("Highlight published!");
-      setFormData({ title: "", description: "", image_base64: "" });
+      setFormData({ title: "", description: "", image_base64: "", resource_speaker: "" });
       setImagePreview(null);
       if (fileInputRef.current) fileInputRef.current.value = "";
       loadHighlights();
@@ -110,9 +114,19 @@ export default function AdminHighlights() {
             </button>
             <h1 className="text-lg font-extrabold text-slate-900">Manage Highlights</h1>
           </div>
-          <Link to="/" className="btn-secondary !px-4 !py-2">
-            <FaHome /> <span className="hidden sm:inline">Portal</span>
-          </Link>
+          <div className="flex items-center gap-3">
+            <a 
+              href="/api/admin/highlights/export/pdf" 
+              target="_blank" 
+              rel="noreferrer"
+              className="btn-primary !px-4 !py-2 bg-slate-800 hover:bg-slate-900 flex items-center gap-2"
+            >
+              <FaDownload /> <span className="hidden sm:inline">Export PDF</span>
+            </a>
+            <Link to="/" className="btn-secondary !px-4 !py-2">
+              <FaHome /> <span className="hidden sm:inline">Portal</span>
+            </Link>
+          </div>
         </header>
 
         <main className="mx-auto w-full max-w-7xl flex-1 space-y-6 p-4 sm:p-6 animate-fade-up">
@@ -152,6 +166,18 @@ export default function AdminHighlights() {
                     ref={fileInputRef}
                     onChange={handleImageChange}
                     className="hidden"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700">Resource Speaker (Optional)</label>
+                  <input
+                    type="text"
+                    name="resource_speaker"
+                    value={formData.resource_speaker}
+                    onChange={handleChange}
+                    placeholder="e.g. Dr. Smith"
+                    className="input-field mt-1"
                   />
                 </div>
 
@@ -225,6 +251,11 @@ export default function AdminHighlights() {
                       </div>
                       <div className="p-4">
                         <h3 className="font-bold text-slate-900 line-clamp-1">{h.title}</h3>
+                        {h.resource_speaker && h.resource_speaker !== "-" && (
+                          <p className="text-xs font-semibold text-primary-600 mt-1 flex items-center gap-1">
+                            👤 {h.resource_speaker}
+                          </p>
+                        )}
                         <p className="text-sm text-slate-500 mt-1 line-clamp-2">{h.description}</p>
                       </div>
                     </div>

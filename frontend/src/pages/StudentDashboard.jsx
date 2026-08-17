@@ -239,10 +239,25 @@ export default function StudentDashboard() {
                             )}
                           </div>
                           
-                          <div className="flex items-center gap-2 text-slate-500 text-sm mb-4 font-medium">
+                          <div className="flex items-center gap-2 text-slate-500 text-sm mb-2 font-medium">
                             <FaClock className="text-slate-400" />
                             {timeStr}
                           </div>
+
+                          {(session.resource_speaker !== "-" || session.location !== "-") && (
+                            <div className="text-sm text-slate-600 mb-4 space-y-1">
+                              {session.resource_speaker !== "-" && (
+                                <div className="flex items-center gap-2">
+                                  <span title="Resource Speaker">👤</span> {session.resource_speaker}
+                                </div>
+                              )}
+                              {session.location !== "-" && (
+                                <div className="flex items-center gap-2">
+                                  <span title="Location">📍</span> {session.location}
+                                </div>
+                              )}
+                            </div>
+                          )}
                           
                           {active && (
                             <button

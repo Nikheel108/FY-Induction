@@ -18,6 +18,8 @@ export default function AdminEventSessions() {
     title: "",
     start_time: "",
     duration_minutes: 60,
+    resource_speaker: "",
+    location: "",
   });
 
   const loadSessions = async () => {
@@ -54,12 +56,14 @@ export default function AdminEventSessions() {
       const payload = {
         title: formData.title,
         start_time: localDate.toISOString(),
-        duration_minutes: parseInt(formData.duration_minutes, 10)
+        duration_minutes: parseInt(formData.duration_minutes, 10),
+        resource_speaker: formData.resource_speaker || "-",
+        location: formData.location || "-",
       };
 
       await createEventSession(payload);
       toast.success("Event session created successfully!");
-      setFormData({ title: "", start_time: "", duration_minutes: 60 });
+      setFormData({ title: "", start_time: "", duration_minutes: 60, resource_speaker: "", location: "" });
       loadSessions();
     } catch (err) {
       toast.error(err.message || "Failed to create session.");
@@ -140,6 +144,28 @@ export default function AdminEventSessions() {
               />
             </div>
             <div>
+              <label className="block text-sm font-semibold text-slate-700">Resource Speaker (Optional)</label>
+              <input
+                type="text"
+                name="resource_speaker"
+                value={formData.resource_speaker}
+                onChange={handleChange}
+                placeholder="e.g. Dr. Smith"
+                className="input-field mt-1"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-slate-700">Location (Optional)</label>
+              <input
+                type="text"
+                name="location"
+                value={formData.location}
+                onChange={handleChange}
+                placeholder="e.g. Main Auditorium"
+                className="input-field mt-1"
+              />
+            </div>
+            <div>
               <label className="block text-sm font-semibold text-slate-700">Duration (Minutes)</label>
               <input
                 type="number"
@@ -186,8 +212,14 @@ export default function AdminEventSessions() {
                 <tbody className="divide-y divide-slate-100">
                   {sessions.map((s) => (
                     <tr key={s.id} className="hover:bg-slate-50 transition">
-                      <td className="px-4 py-3 font-medium text-slate-800">{s.title}</td>
-                      <td className="px-4 py-3">{new Date(s.start_time + 'Z').toLocaleString()}</td>
+                      <td className="px-4 py-3 font-medium text-slate-800">
+                        {s.title}
+                        <div className="text-xs text-slate-500 font-normal mt-0.5">
+                          {s.resource_speaker !== "-" && <span className="mr-2">👤 {s.resource_speaker}</span>}
+                          {s.location !== "-" && <span>📍 {s.location}</span>}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">{new Date(s.start_time).toLocaleString()}</td>
                       <td className="px-4 py-3 text-right">{s.duration_minutes} mins</td>
                       <td className="px-4 py-3 text-center">
                         <button
