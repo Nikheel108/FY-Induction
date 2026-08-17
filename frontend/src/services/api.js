@@ -16,11 +16,19 @@ api.interceptors.request.use((config) => {
   const adminToken = localStorage.getItem("admin_token");
   const studentToken = localStorage.getItem("student_token");
   
-  if (config.url.includes("/admin") && adminToken) {
+  // If the user is navigating the admin portal, always prefer adminToken.
+  // Otherwise, prefer studentToken.
+  const isAdminPortal = window.location.pathname.startsWith("/admin");
+
+  if (isAdminPortal && adminToken) {
     config.headers.Authorization = `Bearer ${adminToken}`;
-  } else if (studentToken) {
+  } else if (!isAdminPortal && studentToken) {
     config.headers.Authorization = `Bearer ${studentToken}`;
+  } else if (adminToken) {
+    // Fallback just in case
+    config.headers.Authorization = `Bearer ${adminToken}`;
   }
+  
   return config;
 });
 
