@@ -127,6 +127,42 @@ def list_event_sessions():
     return jsonify({"success": True, "sessions": [s.to_dict() for s in sessions]})
 
 
+@attendance_bp.route("/admin/event-sessions/<int:session_id>", methods=["PUT"])
+@admin_required
+def edit_event_session(session_id):
+    """Edit an existing event session."""
+    es = db.session.get(EventSession, session_id)
+    if not es:
+        return jsonify({"success": False, "message": "Event session not found."}), 404
+
+    data = request.get_json() or {}
+    
+    if "title" in data and data["title"].strip():
+        es.title = data["title"].strip()
+        
+    if "duration_minutes" in data:
+        try:
+            es.duration_minutes = int(data["duration_minutes"])
+        except ValueError:
+            pass
+
+    if "start_time" in data and data["start_time"].strip():
+        try:
+            dt = datetime.fromisoformat(data["start_time"].replace("Z", "+00:00"))
+            es.start_time = dt
+        except ValueError:
+            pass
+            
+    if "resource_speaker" in data:
+        es.resource_speaker = data["resource_speaker"].strip() or "-"
+        
+    if "location" in data:
+        es.location = data["location"].strip() or "-"
+        
+    db.session.commit()
+    return jsonify({"success": True, "message": "Session updated successfully.", "session": es.to_dict()})
+
+
 @attendance_bp.route("/admin/event-sessions/<int:session_id>", methods=["DELETE"])
 @admin_required
 def delete_event_session(session_id):

@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { FaPlus, FaCalendarAlt, FaTrash, FaUserTie, FaMapMarkerAlt } from "react-icons/fa";
+import { FaPlus, FaCalendarAlt, FaTrash, FaUserTie, FaMapMarkerAlt, FaEdit, FaTimes } from "react-icons/fa";
 
 import { useToast } from "../context/ToastContext";
-import { fetchEventSessions, createEventSession, deleteEventSession } from "../services/adminService";
+import { fetchEventSessions, createEventSession, deleteEventSession, updateEventSession } from "../services/adminService";
 import Sidebar from "../components/Sidebar";
 import { Link } from "react-router-dom";
 import { FaHome } from "react-icons/fa";
@@ -12,6 +12,7 @@ export default function AdminEventSessions() {
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const toast = useToast();
 
   const [formData, setFormData] = useState({
@@ -61,15 +62,43 @@ export default function AdminEventSessions() {
         location: formData.location || "-",
       };
 
-      await createEventSession(payload);
-      toast.success("Event session created successfully!");
+      if (editingId) {
+        await updateEventSession(editingId, payload);
+        toast.success("Event session updated successfully!");
+        setEditingId(null);
+      } else {
+        await createEventSession(payload);
+        toast.success("Event session created successfully!");
+      }
       setFormData({ title: "", start_time: "", duration_minutes: 60, resource_speaker: "", location: "" });
       loadSessions();
     } catch (err) {
-      toast.error(err.message || "Failed to create session.");
+      toast.error(err.message || "Failed to save session.");
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleEdit = (session) => {
+    // format start_time for datetime-local input
+    const dateObj = new Date(session.start_time);
+    // adjust for local timezone offset to display properly in datetime-local
+    const offset = dateObj.getTimezoneOffset() * 60000;
+    const localISOTime = (new Date(dateObj.getTime() - offset)).toISOString().slice(0, 16);
+    
+    setFormData({
+      title: session.title,
+      start_time: localISOTime,
+      duration_minutes: session.duration_minutes,
+      resource_speaker: session.resource_speaker === "-" ? "" : session.resource_speaker,
+      location: session.location === "-" ? "" : session.location,
+    });
+    setEditingId(session.id);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setFormData({ title: "", start_time: "", duration_minutes: 60, resource_speaker: "", location: "" });
   };
 
   const handleDelete = async (id) => {
@@ -115,10 +144,18 @@ export default function AdminEventSessions() {
 
       <div className="grid gap-6 md:grid-cols-3">
         {/* Create Session Form */}
-        <div className="card p-5 md:col-span-1 h-fit">
-          <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-            <FaPlus className="text-primary-600" /> New Session
-          </h2>
+        <div className="card p-5 md:col-span-1 h-fit border-t-4 border-t-primary-500">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+              {editingId ? <FaEdit className="text-primary-600" /> : <FaPlus className="text-primary-600" />}
+              {editingId ? "Edit Session" : "New Session"}
+            </h2>
+            {editingId && (
+              <button type="button" onClick={handleCancelEdit} className="text-slate-400 hover:text-slate-600" title="Cancel Edit">
+                <FaTimes />
+              </button>
+            )}
+          </div>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-semibold text-slate-700">Title</label>
@@ -183,7 +220,7 @@ export default function AdminEventSessions() {
               disabled={submitting}
               className="btn-primary w-full justify-center"
             >
-              {submitting ? "Creating..." : "Create Session"}
+              {submitting ? "Saving..." : editingId ? "Update Session" : "Create Session"}
             </button>
           </form>
         </div>
@@ -222,13 +259,22 @@ export default function AdminEventSessions() {
                       <td className="px-4 py-3">{new Date(s.start_time).toLocaleString()}</td>
                       <td className="px-4 py-3 text-right">{s.duration_minutes} mins</td>
                       <td className="px-4 py-3 text-center">
-                        <button
-                          onClick={() => handleDelete(s.id)}
-                          className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition"
-                          title="Delete Session"
-                        >
-                          <FaTrash />
-                        </button>
+                        <div className="flex items-center justify-center gap-1">
+                          <button
+                            onClick={() => handleEdit(s)}
+                            className="p-2 text-primary-600 hover:bg-primary-50 rounded-lg transition"
+                            title="Edit Session"
+                          >
+                            <FaEdit />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(s.id)}
+                            className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition"
+                            title="Delete Session"
+                          >
+                            <FaTrash />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}

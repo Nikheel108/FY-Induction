@@ -14,6 +14,9 @@ export const createEventSession = (payload) =>
 export const fetchEventSessions = () =>
   api.get("/admin/event-sessions").then((res) => res.data);
 
+export const updateEventSession = (id, payload) =>
+  api.put(`/admin/event-sessions/${id}`, payload).then((res) => res.data);
+
 export const deleteEventSession = (id) =>
   api.delete(`/admin/event-sessions/${id}`).then((res) => res.data);
 
