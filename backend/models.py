@@ -131,6 +131,8 @@ class EventSession(db.Model):
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     title = db.Column(db.String(150), nullable=False)
+    resource_speaker = db.Column(db.String(150), nullable=True)
+    location = db.Column(db.String(150), nullable=True)
     start_time = db.Column(db.DateTime, nullable=False)
     duration_minutes = db.Column(db.Integer, nullable=False)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
@@ -141,9 +143,11 @@ class EventSession(db.Model):
         return {
             "id": self.id,
             "title": self.title,
-            "start_time": self.start_time.isoformat() if self.start_time else None,
+            "resource_speaker": self.resource_speaker or "-",
+            "location": self.location or "-",
+            "start_time": self.start_time.isoformat() + "Z" if self.start_time else None,
             "duration_minutes": self.duration_minutes,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "created_at": self.created_at.isoformat() + "Z" if self.created_at else None,
         }
 
 
@@ -169,6 +173,7 @@ class Highlight(db.Model):
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     title = db.Column(db.String(150), nullable=False)
+    resource_speaker = db.Column(db.String(150), nullable=True)
     description = db.Column(db.Text, nullable=False)
     image_base64 = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
@@ -177,7 +182,8 @@ class Highlight(db.Model):
         return {
             "id": self.id,
             "title": self.title,
+            "resource_speaker": self.resource_speaker or "-",
             "description": self.description,
             "image_base64": self.image_base64,
-            "created_at": self.created_at.isoformat() if self.created_at else None,
+            "created_at": self.created_at.isoformat() + "Z" if self.created_at else None,
         }

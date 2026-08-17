@@ -68,21 +68,19 @@ schedule_data = [
 
 def seed_schedule():
     with app.app_context():
-        # Optional: Clear existing sessions to prevent duplicates if run multiple times
-        # EventSession.query.delete()
+        # Clear existing sessions to prevent duplicates if run multiple times
+        EventSession.query.delete()
         
         print(f"Seeding {len(schedule_data)} sessions...")
         
         for title, start_str, duration in schedule_data:
-            # Check if exists
-            start_time = datetime.fromisoformat(start_str)
-            existing = EventSession.query.filter_by(title=title, start_time=start_time).first()
-            if not existing:
-                es = EventSession(title=title, start_time=start_time, duration_minutes=duration)
-                db.session.add(es)
-                print(f"  + Added: {title} on {start_time.date()}")
-            else:
-                print(f"  - Skipped (Exists): {title}")
+            # The strings are in IST. Subtract 5 hours 30 mins to get UTC.
+            ist_time = datetime.fromisoformat(start_str)
+            utc_time = ist_time - timedelta(hours=5, minutes=30)
+            
+            es = EventSession(title=title, start_time=utc_time, duration_minutes=duration, resource_speaker="-", location="-")
+            db.session.add(es)
+            print(f"  + Added: {title} on {ist_time} (IST)")
                 
         db.session.commit()
         print("Schedule seeded successfully.")
