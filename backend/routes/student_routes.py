@@ -114,21 +114,39 @@ def _apply_payload(student, cleaned):
 
 @student_bp.route("/login", methods=["POST"])
 def student_login():
-    """Authenticate a student via PRN only."""
+    """Authenticate a student via PRN and password."""
     payload = request.get_json(silent=True) or {}
     prn = utils.sanitize(payload.get("prn"))
+    password = payload.get("password")
 
     if not prn:
         return jsonify({"success": False, "message": "PRN is required."}), 400
 
-    student = Student.query.filter_by(prn=prn).first()
+    student = Student.query.filter(db.func.lower(Student.prn) == prn.lower()).first()
     if not student:
-        # Check if it's a valid PRN that hasn't registered yet
+        # Check if it's a valid PRN present in Upload Students (ValidPRN table)
         from models import ValidPRN
-        is_valid = ValidPRN.query.filter_by(prn=prn).first()
+        is_valid = ValidPRN.query.filter(db.func.lower(ValidPRN.prn) == prn.lower()).first()
         if is_valid:
-            return jsonify({"success": False, "message": "PRN found, but not registered.", "needs_registration": True}), 401
-        return jsonify({"success": False, "message": "Invalid PRN. Ask admin to add your PRN."}), 401
+            return jsonify({"success": False, "message": "PRN is authorized, but not registered yet. Please complete registration.", "needs_registration": True}), 401
+        return jsonify({"success": False, "message": "PRN not found in authorized student list. Ask admin to add your PRN in Upload Students."}), 401
+
+    if not password:
+        return jsonify({"success": False, "message": "Password is required. Please use Pass26."}), 400
+
+    cleaned_pass = password.strip() if isinstance(password, str) else ""
+
+    # Accept Pass26 or Pass@2526 for testing OR verify existing password hash
+    is_valid_password = (cleaned_pass in ("Pass26", "Pass@2526")) or (student.password_hash and student.check_password(cleaned_pass))
+    if not is_valid_password:
+        return jsonify({"success": False, "message": "Invalid password. Use Pass26 for testing."}), 401
+
+    # Ensure hash is saved
+    try:
+        student.set_password("Pass26")
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
 
     token = generate_student_token(current_app._get_current_object(), student.id, student.prn)
     
@@ -145,8 +163,20 @@ def student_login():
 @student_bp.route("/change-password", methods=["POST"])
 @student_required
 def student_change_password():
-    """Deprecated: No passwords anymore."""
-    return jsonify({"success": False, "message": "Passwords are no longer used."}), 400
+    """Change student password."""
+    payload = request.get_json(silent=True) or {}
+    new_password = payload.get("new_password")
+    if not new_password or len(new_password) < 4:
+        return jsonify({"success": False, "message": "Password must be at least 4 characters."}), 400
+
+    student_id = request.student_payload["student_id"]
+    student = db.session.get(Student, student_id)
+    if not student:
+        return jsonify({"success": False, "message": "Student not found."}), 404
+
+    student.set_password(new_password)
+    db.session.commit()
+    return jsonify({"success": True, "message": "Password changed successfully."})
 
 
 @student_bp.route("/me", methods=["GET"])
@@ -168,25 +198,75 @@ def student_me():
 # Public endpoints
 # ---------------------------------------------------------------------------
 
+@student_bp.route("/check-prn", methods=["POST"])
+def check_prn_status():
+    """
+    Check if a PRN is present in the Upload Students (ValidPRN) database table.
+    """
+    from models import ValidPRN
+    payload = request.get_json(silent=True) or {}
+    prn = utils.sanitize(payload.get("prn"))
+
+    if not prn:
+        return jsonify({"success": False, "message": "PRN is required."}), 400
+
+    # 1. Check if PRN is in ValidPRN table (Upload Students section in admin)
+    valid_record = ValidPRN.query.filter(db.func.lower(ValidPRN.prn) == prn.lower()).first()
+    if not valid_record:
+        return jsonify({
+            "success": False,
+            "message": f"PRN '{prn}' is not authorized for registration. Ask admin to add your PRN in the Upload Students section.",
+            "is_valid": False
+        }), 200
+
+    # 2. Check if student is already registered
+    existing_student = Student.query.filter(db.func.lower(Student.prn) == prn.lower()).first()
+    if existing_student:
+        return jsonify({
+            "success": True,
+            "message": f"PRN '{prn}' is already registered. Please log in with your password.",
+            "is_valid": True,
+            "is_registered": True,
+            "student_name": existing_student.full_name
+        }), 200
+
+    # 3. Valid PRN & eligible for registration
+    return jsonify({
+        "success": True,
+        "message": f"PRN '{valid_record.prn}' is verified.",
+        "is_valid": True,
+        "is_registered": False,
+        "prn": valid_record.prn,
+        "expected_name": valid_record.expected_name or "",
+        "expected_department": valid_record.expected_department or ""
+    }), 200
+
+
 @student_bp.route("/register", methods=["POST"])
 def register_student():
     """
     Public registration endpoint.
-    Requires PRN to be present in ValidPRN table.
+    Requires PRN to be present in ValidPRN table (Upload Students in Admin Panel).
+    Generates a 6-character alphanumeric password and schedules a welcome email after 1 minute.
     """
+    import secrets
+    import string
+    import threading
+    import time
     from models import ValidPRN
+
     payload = request.get_json(silent=True) or {}
     errors, cleaned = _validate_payload(payload)
 
     prn = cleaned.get("prn")
     if prn:
-        # Check if PRN is in ValidPRN table
-        is_valid = ValidPRN.query.filter_by(prn=prn).first()
+        # Check if PRN is in ValidPRN table (uploaded by admin)
+        is_valid = ValidPRN.query.filter(db.func.lower(ValidPRN.prn) == prn.lower()).first()
         if not is_valid:
-            errors.append(f"PRN {prn} is not authorized for registration. Please contact admin.")
+            errors.append(f"PRN '{prn}' is not authorized for registration. Ask admin to add your PRN in Upload Students.")
             
         # Check if student is already registered
-        student = Student.query.filter_by(prn=prn).first()
+        student = Student.query.filter(db.func.lower(Student.prn) == prn.lower()).first()
         if student:
             errors.append("This PRN is already registered.")
 
@@ -210,6 +290,11 @@ def register_student():
     student.is_first_login = False
     _apply_payload(student, cleaned)
     
+    # Generate 6-character random alphanumeric password using dedicated password service
+    from services.password_service import generate_random_password
+    raw_password = generate_random_password(6)
+    student.set_password(raw_password)
+
     db.session.add(student)
 
     try:
@@ -223,9 +308,28 @@ def register_student():
             "errors": [str(exc)],
         }), 500
 
+    # Schedule sending welcome email after 1 minute (60 seconds) in background thread
+    app_obj = current_app._get_current_object()
+    student_id = student.id
+    pwd_val = raw_password
+
+    def _delayed_welcome_email_job():
+        time.sleep(60)  # Wait 1 minute
+        with app_obj.app_context():
+            try:
+                s = db.session.get(Student, student_id)
+                if s:
+                    send_registration_emails(s, raw_password=pwd_val)
+            except Exception as e:
+                logger.exception("Error sending 1-minute delayed registration email: %s", e)
+
+    email_thread = threading.Thread(target=_delayed_welcome_email_job)
+    email_thread.daemon = True
+    email_thread.start()
+
     return jsonify({
         "success": True,
-        "message": "Student registered successfully.",
+        "message": "Student registered successfully. Your login password will be sent to your email in 1 minute.",
         "student": student.to_dict(),
     }), 201
 

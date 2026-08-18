@@ -1,7 +1,11 @@
 import base64
 import logging
 import os
+import smtplib
 from datetime import datetime
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.mime.application import MIMEApplication
 
 import requests
 from flask import current_app
@@ -21,10 +25,10 @@ def _resolve_attachment(filename):
 
 
 def _get_base64_attachments(student):
-    """Read PDFs, build receipt, and base64-encode them for the JSON payload."""
+    """Read static PDFs and base64-encode them for the JSON/SMTP payload."""
     attachments = []
     
-    # 1. Static uploads (Schedule, Campus Map, etc.)
+    # Static uploads (Schedule, Campus Map, etc.)
     for filename, display_name in current_app.config["EMAIL_ATTACHMENTS"]:
         path = _resolve_attachment(filename)
         if path:
@@ -38,15 +42,6 @@ def _get_base64_attachments(student):
         else:
             logger.warning("Attachment not found on disk: %s", filename)
             
-    # 2. Dynamic receipt
-    receipt_bytes = build_receipt_pdf(student)
-    receipt_b64 = base64.b64encode(receipt_bytes).decode("utf-8")
-    attachments.append({
-        "name": f"Registration_Receipt_{student.registration_id}.pdf",
-        "mimeType": "application/pdf",
-        "data": receipt_b64
-    })
-    
     return attachments
 
 
@@ -63,10 +58,26 @@ def _record_log(student_id, mail_type, status, error_message=None):
     db.session.commit()
 
 
-def _build_student_html(student):
+def _build_student_html(student, raw_password=None):
     photo_html = f'<img src="{student.photo_base64}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 8px; float: right; border: 1px solid #e2e8f0; margin-left: 16px; margin-bottom: 16px;" alt="Student Photo"/>' if getattr(student, 'photo_base64', None) else ''
     logo_url = "https://fy-induction.vercel.app/logo.png"
     
+    cred_box = f"""
+          <div style="background: #f0fdf4; border-radius: 8px; padding: 20px; margin: 24px 0; border: 1px solid #bbf7d0; border-left: 4px solid #16a34a;">
+            <h3 style="margin: 0 0 12px 0; color: #15803d; font-size: 16px;">🔑 Your Student Portal Login Credentials</h3>
+            <table style="width: 100%; border-collapse: collapse; font-size: 15px;">
+              <tr>
+                <td style="padding: 6px 0; color: #475569; width: 45%;"><strong>User ID (PRN):</strong></td>
+                <td style="padding: 6px 0; font-weight: 700; color: #0f172a; font-family: monospace; font-size: 16px;">{student.prn}</td>
+              </tr>
+              {f'<tr style="border-top: 1px solid #dcfce7;"><td style="padding: 6px 0; color: #475569;"><strong>Password:</strong></td><td style="padding: 6px 0; font-weight: 700; color: #15803d; font-family: monospace; font-size: 16px;">{raw_password}</td></tr>' if raw_password else ''}
+            </table>
+            <p style="margin: 12px 0 0 0; font-size: 13px; color: #166534;">
+              Log in to your <a href="https://fy-induction.vercel.app/student-login" style="color: #15803d; font-weight: bold; text-decoration: underline;">Student Portal</a> using these credentials.
+            </p>
+          </div>
+    """
+
     return f"""
     <div style="font-family: 'Segoe UI', Inter, Arial, sans-serif; color: #334155; background-color: #f8fafc; padding: 30px 15px; margin: 0;">
       <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);">
@@ -83,6 +94,8 @@ def _build_student_html(student):
           <p style="font-size: 16px; margin-top: 0;">Dear <strong>{student.full_name}</strong>,</p>
           <p style="font-size: 16px; color: #475569;">Congratulations on your admission! Your registration for the <strong>First Year Induction Program</strong> has been successfully completed.</p>
           
+          {cred_box}
+
           <div style="background: #f1f5f9; border-radius: 8px; padding: 20px; margin: 24px 0; border: 1px solid #e2e8f0; clear: both;">
             <table style="width: 100%; border-collapse: collapse; font-size: 15px;">
               <tr><td style="padding: 8px 0; color: #64748b; width: 40%;"><strong>PRN Number</strong></td>
@@ -174,6 +187,48 @@ def _build_parent_html(student):
     """
 
 
+def _send_via_smtp(recipient, subject, html_body, attachments=None):
+    """Sends email via standard SMTP (Gmail)."""
+    email_address = os.getenv("EMAIL_ADDRESS") or current_app.config.get("EMAIL_ADDRESS", "testsameer662@gmail.com")
+    email_password = os.getenv("EMAIL_PASSWORD") or current_app.config.get("EMAIL_PASSWORD", "vxxglodtoulsnlna")
+    smtp_server = os.getenv("SMTP_SERVER") or current_app.config.get("SMTP_SERVER", "smtp.gmail.com")
+    smtp_port = int(os.getenv("SMTP_PORT") or current_app.config.get("SMTP_PORT", 587))
+
+    if not email_address or not email_password:
+        raise ValueError("SMTP credentials (EMAIL_ADDRESS and EMAIL_PASSWORD) not configured.")
+
+    msg = MIMEMultipart("mixed")
+    msg["From"] = f"MITAOE Induction <{email_address}>"
+    msg["To"] = recipient
+    msg["Subject"] = subject
+
+    # Attach HTML body
+    html_part = MIMEText(html_body, "html", "utf-8")
+    msg.attach(html_part)
+
+    # Attachments
+    if attachments:
+        for att in attachments:
+            name = att.get("name", "attachment.pdf")
+            b64_data = att.get("data", "")
+            if b64_data:
+                try:
+                    raw_bytes = base64.b64decode(b64_data)
+                    part = MIMEApplication(raw_bytes, Name=name)
+                    part.add_header('Content-Disposition', 'attachment', filename=name)
+                    msg.attach(part)
+                except Exception as e:
+                    logger.warning("Could not attach file %s: %s", name, e)
+
+    # Connect to SMTP server & send
+    with smtplib.SMTP(smtp_server, smtp_port, timeout=30) as server:
+        server.starttls()
+        server.login(email_address, email_password)
+        server.sendmail(email_address, recipient, msg.as_string())
+    
+    logger.info("Email successfully sent via SMTP to %s", recipient)
+
+
 _current_gas_index = 0
 
 def _send_via_gas(recipient, subject, html_body, attachments=None):
@@ -203,8 +258,6 @@ def _send_via_gas(recipient, subject, html_body, attachments=None):
         url = gas_urls[idx]
         
         try:
-            # GAS Web Apps always reply with a 302 redirect to a content server,
-            # so we must follow redirects to get the final JSON response.
             response = requests.post(url, json=payload, allow_redirects=True, timeout=45)
             response.raise_for_status()
             
@@ -218,7 +271,6 @@ def _send_via_gas(recipient, subject, html_body, attachments=None):
                 else:
                     logger.warning("GAS responded with non-JSON or weird JSON, but status was 200: %s", response.text)
                     
-            # Success! Remember this index as the working one
             _current_gas_index = idx
             return
             
@@ -226,49 +278,51 @@ def _send_via_gas(recipient, subject, html_body, attachments=None):
             logger.warning("Failed sending via GAS URL %d: %s", idx, e)
             last_error = e
             
-    # If we exhaust all URLs
     raise ValueError(f"All {num_urls} GAS URLs failed. Last error: {last_error}")
 
 
-def send_registration_emails(student):
-    """Send student and parent emails via GAS and log results."""
+def _send_email_dispatch(recipient, subject, html_body, attachments=None, raw_password=None):
+    """
+    Primary email dispatcher:
+    1. Tries SMTP first if EMAIL_ADDRESS and EMAIL_PASSWORD exist.
+    2. Falls back to Google Apps Script (GAS) if SMTP fails or is omitted.
+    """
+    email_address = os.getenv("EMAIL_ADDRESS") or current_app.config.get("EMAIL_ADDRESS")
+    email_password = os.getenv("EMAIL_PASSWORD") or current_app.config.get("EMAIL_PASSWORD")
+
+    if email_address and email_password:
+        try:
+            _send_via_smtp(recipient, subject, html_body, attachments)
+            return
+        except Exception as smtp_err:
+            logger.warning("SMTP dispatch to %s failed: %s. Falling back to GAS...", recipient, smtp_err)
+
+    # Fallback to Google Apps Script
+    _send_via_gas(recipient, subject, html_body, attachments)
+
+
+def send_registration_emails(student, raw_password=None):
+    """Send student and parent emails via SMTP / GAS and log results."""
     results = {}
     attachments = _get_base64_attachments(student)
 
     # --- Welcome email to the student -----------------------------------------
     try:
-        _send_via_gas(
+        _send_email_dispatch(
             recipient=student.student_email,
             subject="Welcome to MIT Academy of Engineering",
-            html_body=_build_student_html(student),
+            html_body=_build_student_html(student, raw_password),
             attachments=attachments
         )
         _record_log(student.id, "welcome", "sent")
         results["student"] = {"status": "sent"}
     except Exception as exc:
-        logger.exception("Failed to send welcome email for student %s via GAS", student.id)
+        logger.exception("Failed to send welcome email for student %s", student.id)
         try:
             _record_log(student.id, "welcome", "failed", str(exc))
         except Exception:
             logger.exception("Failed to record welcome email log for student %s", student.id)
         results["student"] = {"status": "failed", "error": str(exc)}
-
-    # --- Confirmation email to the parent --------------------------------------
-    try:
-        _send_via_gas(
-            recipient=student.parent_email,
-            subject="Registration Confirmation",
-            html_body=_build_parent_html(student)
-        )
-        _record_log(student.id, "parent", "sent")
-        results["parent"] = {"status": "sent"}
-    except Exception as exc:
-        logger.exception("Failed to send parent email for student %s via GAS", student.id)
-        try:
-            _record_log(student.id, "parent", "failed", str(exc))
-        except Exception:
-            logger.exception("Failed to record parent email log for student %s", student.id)
-        results["parent"] = {"status": "failed", "error": str(exc)}
 
     return results
 
@@ -367,7 +421,7 @@ def send_broadcast_emails(app, payload):
             for email, greeting in targets:
                 try:
                     html_body = _build_broadcast_html(payload, greeting)
-                    _send_via_gas(
+                    _send_email_dispatch(
                         recipient=email,
                         subject=subject,
                         html_body=html_body,

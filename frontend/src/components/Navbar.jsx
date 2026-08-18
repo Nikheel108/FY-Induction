@@ -1,16 +1,16 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { FaGraduationCap, FaBars, FaTimes, FaUserCircle } from "react-icons/fa";
+import { FaBars, FaTimes, FaUserCircle } from "react-icons/fa";
 
 /**
  * Public site navigation bar shown on non-admin pages.
- * Displays logged-in student's name if authenticated, otherwise "Student Login".
+ * Displays logged-in student's name if authenticated, otherwise "Register Now" / "Login".
  */
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [student, setStudent] = useState(null);
   const location = useLocation();
-  const isRegisterPage = location.pathname === "/register";
+  const isRegisterPage = location.pathname === "/register" || location.pathname === "/student/register";
 
   useEffect(() => {
     const token = localStorage.getItem("student_token");
@@ -66,9 +66,14 @@ export default function Navbar() {
                 </span>
               </Link>
             ) : (
-              <Link to="/student-login" className="btn-primary !px-5 !py-2.5 !text-sm whitespace-nowrap ml-2">
-                Student Login
-              </Link>
+              <>
+                <Link to="/student-login" className="text-sm font-semibold text-slate-600 hover:text-primary-600 transition-colors">
+                  Login
+                </Link>
+                <Link to="/student-login" className="btn-primary !px-5 !py-2.5 !text-sm whitespace-nowrap ml-2">
+                  Register Now
+                </Link>
+              </>
             )}
           </nav>
         )}
@@ -116,7 +121,7 @@ export default function Navbar() {
               className="btn-primary w-full justify-center !py-3"
               onClick={() => setMobileMenuOpen(false)}
             >
-              Student Login
+              Register Now
             </Link>
           )}
         </nav>

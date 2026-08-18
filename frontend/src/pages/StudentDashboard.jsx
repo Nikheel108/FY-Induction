@@ -275,30 +275,30 @@ export default function StudentDashboard() {
         {/* Tab Content: Schedule */}
         {activeTab === "schedule" && (
           <div className="space-y-6 animate-fade-in">
-            {/* Date Selection Bar with Calendar Icon */}
+            {/* Date Selection Dropdown */}
             {availableDates.length > 0 && (
               <div className="card p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-l-4 border-l-primary-600">
-                <div className="flex items-center gap-2 text-slate-800 font-bold text-sm">
+                <label htmlFor="schedule-date-select" className="flex items-center gap-2 text-slate-800 font-bold text-sm cursor-pointer">
                   <FaCalendarAlt className="text-primary-600 text-base" />
                   <span>Select Date:</span>
-                </div>
+                </label>
 
-                <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
-                  {availableDates.map((item) => (
-                    <button
-                      key={item.key}
-                      type="button"
-                      onClick={() => setSelectedScheduleDate(item.key)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${
-                        selectedScheduleDate === item.key
-                          ? "bg-primary-600 text-white shadow-sm ring-2 ring-primary-300"
-                          : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                      }`}
-                    >
-                      <FaCalendarAlt className="text-[10px]" />
-                      {item.label} ({item.count})
-                    </button>
-                  ))}
+                <div className="relative w-full sm:w-72">
+                  <select
+                    id="schedule-date-select"
+                    value={selectedScheduleDate}
+                    onChange={(e) => setSelectedScheduleDate(e.target.value)}
+                    className="input-field font-semibold text-slate-800 bg-white border border-slate-300 rounded-lg py-2 pl-3 pr-8 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 w-full appearance-none shadow-sm cursor-pointer"
+                  >
+                    {availableDates.map((item) => (
+                      <option key={item.key} value={item.key}>
+                        📅 {item.label} ({item.count} {item.count === 1 ? 'session' : 'sessions'})
+                      </option>
+                    ))}
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">
+                    <FaFilter className="text-xs text-primary-600" />
+                  </div>
                 </div>
               </div>
             )}

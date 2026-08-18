@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { FaCamera, FaUpload, FaTimes } from "react-icons/fa";
 
@@ -34,21 +34,37 @@ export default function StudentForm({ defaultValues = {}, onSubmit, submitLabel 
     register,
     handleSubmit,
     setValue,
+    reset,
     formState: { errors },
   } = useForm({
     defaultValues: {
-      full_name: "",
-      prn: "",
-      department: DEPARTMENTS[0],  // pre-select the only available department
-      student_email: "",
-      student_phone: "",
-      parent_name: "",
-      parent_email: "",
-      parent_phone: "",
-      photo_base64: "",
-      ...defaultValues, // override with provided defaults (e.g., when editing)
+      full_name: defaultValues.full_name || "",
+      prn: defaultValues.prn || "",
+      department: defaultValues.department || DEPARTMENTS[0],
+      student_email: defaultValues.student_email || "",
+      student_phone: defaultValues.student_phone || "",
+      parent_name: defaultValues.parent_name || "",
+      parent_email: defaultValues.parent_email || "",
+      parent_phone: defaultValues.parent_phone || "",
+      photo_base64: defaultValues.photo_base64 || "",
     },
   });
+
+  useEffect(() => {
+    if (defaultValues && defaultValues.prn) {
+      reset({
+        full_name: defaultValues.full_name || "",
+        prn: defaultValues.prn || "",
+        department: defaultValues.department || DEPARTMENTS[0],
+        student_email: defaultValues.student_email || "",
+        student_phone: defaultValues.student_phone || "",
+        parent_name: defaultValues.parent_name || "",
+        parent_email: defaultValues.parent_email || "",
+        parent_phone: defaultValues.parent_phone || "",
+        photo_base64: defaultValues.photo_base64 || "",
+      });
+    }
+  }, [defaultValues, reset]);
 
   const handlePhotoChange = (e) => {
     const file = e.target.files?.[0];
