@@ -7,3 +7,30 @@ export const adminMe = () => api.get("/admin/me").then((res) => res.data);
 
 export const broadcastEmail = (payload) =>
   api.post("/admin/broadcast", payload).then((res) => res.data);
+
+export const createEventSession = (payload) =>
+  api.post("/admin/event-sessions", payload).then((res) => res.data);
+
+export const fetchEventSessions = () =>
+  api.get("/admin/event-sessions").then((res) => res.data);
+
+export const updateEventSession = (id, payload) =>
+  api.put(`/admin/event-sessions/${id}`, payload).then((res) => res.data);
+
+export const deleteEventSession = (id) =>
+  api.delete(`/admin/event-sessions/${id}`).then((res) => res.data);
+export const getValidPrns = () =>
+  api.get("/admin/valid-prns").then((res) => res.data);
+
+export const editValidPrn = (id, payload) =>
+  api.put(`/admin/valid-prns/${id}`, payload).then((res) => res.data);
+
+export const deleteValidPrn = (id) =>
+  api.delete(`/admin/valid-prns/${id}`).then((res) => res.data);
+
+export const uploadPrnFile = (formData) =>
+  api.post("/admin/upload-file", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  }).then((res) => res.data);
+export const uploadPrns = (prns) =>
+  api.post("/admin/upload-prns", { prns }).then((res) => res.data);

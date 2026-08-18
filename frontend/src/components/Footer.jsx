@@ -37,7 +37,7 @@ export default function Footer() {
           <ul className="mt-3 space-y-2 text-sm text-slate-500">
             <li className="flex items-center gap-2"><FaMapMarkerAlt /> Alandi, Pune, Maharashtra</li>
             <li className="flex items-center gap-2"><FaPhone /> +91-82178-59747</li>
-            <li className="flex items-center gap-2"><FaEnvelope /> induction@mitaoe.ac.in</li>
+            <li className="flex items-center gap-2"><FaEnvelope /> fyinduction2627@gmail.com</li>
           </ul>
         </div>
       </div>

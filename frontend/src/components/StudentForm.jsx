@@ -26,7 +26,7 @@ const EMAIL_RULES = (required = true) => ({
  * Handles client-side validation via react-hook-form; the backend re-validates
  * everything server-side.
  */
-export default function StudentForm({ defaultValues = {}, onSubmit, submitLabel = "Submit", loading = false }) {
+export default function StudentForm({ defaultValues = {}, onSubmit, submitLabel = "Submit", loading = false, readOnlyPrn = false }) {
   const [photoPreview, setPhotoPreview] = useState(defaultValues.photo_base64 || null);
   const fileInputRef = useRef(null);
 
@@ -64,9 +64,9 @@ export default function StudentForm({ defaultValues = {}, onSubmit, submitLabel 
     reader.onload = (event) => {
       const img = new Image();
       img.onload = () => {
-        // Resize down to max 400x400 to save bandwidth & db space
+        // Resize down to max 300x300 to save bandwidth & db space
         const canvas = document.createElement("canvas");
-        const MAX_SIZE = 400;
+        const MAX_SIZE = 300;
         let width = img.width;
         let height = img.height;
 
@@ -84,7 +84,7 @@ export default function StudentForm({ defaultValues = {}, onSubmit, submitLabel 
         ctx.drawImage(img, 0, 0, width, height);
 
         // Convert to highly compressed JPEG
-        const dataUrl = canvas.toDataURL("image/jpeg", 0.7);
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.6);
         setPhotoPreview(dataUrl);
         setValue("photo_base64", dataUrl, { shouldDirty: true });
       };
@@ -118,6 +118,8 @@ export default function StudentForm({ defaultValues = {}, onSubmit, submitLabel 
               {...register("prn", { required: "PRN is required" })}
               error={errors.prn}
               placeholder="e.g. PRN260101"
+              disabled={readOnlyPrn}
+              className={readOnlyPrn ? "bg-slate-100 cursor-not-allowed" : ""}
             />
           </Field>
 

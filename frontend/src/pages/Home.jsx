@@ -7,6 +7,8 @@ import {
   FaMapMarkedAlt,
   FaUserCheck,
   FaUsers,
+  FaImages,
+  FaClipboardCheck,
 } from "react-icons/fa";
 
 import Footer from "../components/Footer";
@@ -15,24 +17,24 @@ import { getStatistics } from "../services/studentService";
 
 const FEATURES = [
   {
-    icon: FaCalendarAlt,
-    title: "Day-wise Schedule",
-    text: "A complete itinerary of orientation sessions, workshops and campus tours.",
+    icon: FaUserCheck,
+    title: "Instant Registration",
+    text: "Register in minutes and get your unique registration code instantly.",
   },
   {
-    icon: FaMapMarkedAlt,
-    title: "Campus Map",
-    text: "Never get lost. Navigate labs, hostels, auditorium and the cafeteria easily.",
+    icon: FaClipboardCheck,
+    title: "Live Attendance",
+    text: "Mark your attendance securely during active event sessions.",
+  },
+  {
+    icon: FaImages,
+    title: "Event Highlights",
+    text: "Explore photos and memories from past induction events and sessions.",
   },
   {
     icon: FaEnvelope,
-    title: "Email Confirmations",
-    text: "Automatic welcome emails are sent to you and your parents instantly.",
-  },
-  {
-    icon: FaUserCheck,
-    title: "Simple Registration",
-    text: "Fill one form and your induction registration is done in under 3 minutes.",
+    title: "Important Updates",
+    text: "Receive official schedules, campus maps, and announcements.",
   },
 ];
 
@@ -120,34 +122,28 @@ export default function Home() {
             delivered straight to your inbox.
           </p>
           <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
-            <Link to="/register" className="btn-primary !px-8 !py-3 !text-base w-full sm:w-auto">
-              Register for Induction
-            </Link>
-            <Link
-              to="/admin/login"
-              className="inline-flex items-center justify-center rounded-lg border border-slate-500 px-8 py-3 text-base font-semibold text-slate-200 transition hover:bg-white/10 w-full sm:w-auto"
-            >
-              Admin Dashboard
+            <Link to="/student-login" className="btn-primary !px-8 !py-3 !text-base w-full sm:w-auto">
+              Register / Access Dashboard
             </Link>
           </div>
 
           {stats && (
             <div className="mx-auto mt-12 grid max-w-3xl grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-4">
-              <div className="rounded-xl bg-white/5 p-3 sm:p-4 backdrop-blur">
-                <p className="text-2xl sm:text-3xl font-extrabold text-white">{stats.total}</p>
-                <p className="mt-1 text-xs font-medium text-slate-400">Registrations</p>
+              <div className="rounded-xl bg-white/10 p-4 sm:p-5 backdrop-blur shadow-lg border border-white/10 transition hover:-translate-y-1">
+                <p className="text-3xl sm:text-4xl font-extrabold text-white">{stats.total}</p>
+                <p className="mt-1 text-sm font-medium text-slate-300">Registrations</p>
               </div>
-              <div className="rounded-xl bg-white/5 p-3 sm:p-4 backdrop-blur">
-                <p className="text-2xl sm:text-3xl font-extrabold text-white">{stats.by_department?.length ?? 0}</p>
-                <p className="mt-1 text-xs font-medium text-slate-400">Departments</p>
+              <div className="rounded-xl bg-white/10 p-4 sm:p-5 backdrop-blur shadow-lg border border-white/10 transition hover:-translate-y-1">
+                <p className="text-3xl sm:text-4xl font-extrabold text-white">{stats.by_department?.length ?? 0}</p>
+                <p className="mt-1 text-sm font-medium text-slate-300">Departments</p>
               </div>
-              <div className="rounded-xl bg-white/5 p-3 sm:p-4 backdrop-blur">
-                <p className="text-2xl sm:text-3xl font-extrabold text-white">{stats.total}</p>
-                <p className="mt-1 text-xs font-medium text-slate-400">Students</p>
+              <div className="rounded-xl bg-white/10 p-4 sm:p-5 backdrop-blur shadow-lg border border-white/10 transition hover:-translate-y-1">
+                <p className="text-3xl sm:text-4xl font-extrabold text-white">{stats.total}</p>
+                <p className="mt-1 text-sm font-medium text-slate-300">Students</p>
               </div>
-              <div className="rounded-xl bg-white/5 p-3 sm:p-4 backdrop-blur">
-                <p className="text-2xl sm:text-3xl font-extrabold text-white">1</p>
-                <p className="mt-1 text-xs font-medium text-slate-400">Program</p>
+              <div className="rounded-xl bg-white/10 p-4 sm:p-5 backdrop-blur shadow-lg border border-white/10 transition hover:-translate-y-1">
+                <p className="text-3xl sm:text-4xl font-extrabold text-white">1</p>
+                <p className="mt-1 text-sm font-medium text-slate-300">Program</p>
               </div>
             </div>
           )}
@@ -169,7 +165,7 @@ export default function Home() {
               <span className="grid h-12 w-12 place-items-center rounded-xl bg-primary-50 text-2xl text-primary-700">
                 <Icon />
               </span>
-              <h3 className="mt-4 text-base font-bold text-slate-900">{title}</h3>
+              <h3 className="mt-5 text-lg font-bold text-slate-900">{title}</h3>
               <p className="mt-2 text-sm leading-relaxed text-slate-500">{text}</p>
             </div>
           ))}
@@ -188,8 +184,8 @@ export default function Home() {
               </p>
             </div>
           </div>
-          <Link to="/register" className="btn-primary !bg-white !text-primary-700 hover:!bg-primary-50 w-full sm:w-auto mt-4 sm:mt-0">
-            <FaGraduationCap /> Register Now
+          <Link to="/student-login" className="btn-primary !bg-white !text-primary-700 hover:!bg-primary-50 w-full sm:w-auto mt-4 sm:mt-0">
+            <FaGraduationCap /> Get Started
           </Link>
         </div>
       </section>

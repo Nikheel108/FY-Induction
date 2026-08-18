@@ -62,7 +62,7 @@ export default function Success() {
             Registration Successful!
           </h1>
           <p className="animate-fade-up mt-2 text-sm text-slate-500">
-            Please check your email for the welcome message and attachments.
+            Please download your receipt and keep the Registration ID for your records.
           </p>
 
           {student ? (
@@ -87,21 +87,7 @@ export default function Success() {
                 </div>
               </div>
 
-              {registration?.emails && (
-                <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-                  <p className="flex items-center gap-2 font-semibold"><FaEnvelope /> Email status</p>
-                  <ul className="mt-1 list-inside list-disc text-xs">
-                    {Object.entries(registration.emails).map(([key, value]) => (
-                      <li key={key} className={value.status === "sent" ? "text-emerald-700" : "text-red-600"}>
-                        {key === "student" ? "Welcome email to student" : "Confirmation email to parent"}: {value.status}
-                      </li>
-                    ))}
-                  </ul>
-                  <p className="mt-1 text-xs text-amber-700">
-                    Note: if emails could not be sent, an administrator can resend them later.
-                  </p>
-                </div>
-              )}
+
 
               <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:justify-center">
                 <button

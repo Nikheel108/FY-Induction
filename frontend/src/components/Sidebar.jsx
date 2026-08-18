@@ -1,12 +1,15 @@
 import { Link, useNavigate } from "react-router-dom";
-import { FaChartBar, FaSignOutAlt, FaUserGraduate, FaUsers, FaClipboardCheck, FaBullhorn } from "react-icons/fa";
+import { FaChartBar, FaSignOutAlt, FaUserGraduate, FaUsers, FaClipboardCheck, FaBullhorn, FaImage } from "react-icons/fa";
 
 import { useAuth } from "../context/AuthContext";
 import { useToast } from "../context/ToastContext";
 
 const LINKS = [
   { to: "/admin/dashboard", label: "Dashboard", icon: FaChartBar },
+  { to: "/admin/upload-students", label: "Upload Students", icon: FaUsers },
   { to: "/admin/attendance", label: "Attendance", icon: FaClipboardCheck },
+  { to: "/admin/sessions", label: "Event Sessions", icon: FaChartBar }, // Reuse icon or add new
+  { to: "/admin/highlights", label: "Highlights", icon: FaImage },
   { to: "/admin/broadcast", label: "Broadcast", icon: FaBullhorn },
 ];
 

@@ -21,6 +21,7 @@ from routes.student_routes import student_bp
 from services import utils
 from services.database import db
 from routes.attendance_routes import attendance_bp
+from routes.highlight_routes import highlights_bp
 
 # Configure a consistent log format for terminal output.
 logging.basicConfig(
@@ -52,6 +53,7 @@ def create_app(config_class=Config):
     app.register_blueprint(student_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(attendance_bp)
+    app.register_blueprint(highlights_bp)
 
     # --- Health check -------------------------------------------------------------
     @app.get("/api/health")
@@ -63,6 +65,21 @@ def create_app(config_class=Config):
     with app.app_context():
         try:
             db.create_all()
+            
+            # Auto-migrate valid_prns table to add new columns (ignore if they already exist)
+            from sqlalchemy import text
+            try:
+                db.session.execute(text("ALTER TABLE valid_prns ADD COLUMN expected_name VARCHAR(100);"))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+                
+            try:
+                db.session.execute(text("ALTER TABLE valid_prns ADD COLUMN expected_department VARCHAR(100);"))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+
             logger.info("Database tables ensured (db=%s).", app.config["DB_NAME"])
         except Exception as exc:  # noqa: BLE001 - startup must not crash the API
             logger.error("Could not create the tables: %s", exc)

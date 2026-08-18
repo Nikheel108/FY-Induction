@@ -10,11 +10,11 @@ import logging
 from flask import Blueprint, current_app, jsonify, request, send_file
 from io import BytesIO
 
-from models import MailLog, Student
+from models import MailLog, Student, EventSession
 from services import utils
 from services.database import db
 from services.email_service import send_registration_emails
-from services.utils import admin_required
+from services.utils import admin_required, student_required, generate_student_token
 
 student_bp = Blueprint("student", __name__, url_prefix="/api")
 
@@ -109,28 +109,91 @@ def _apply_payload(student, cleaned):
 
 
 # ---------------------------------------------------------------------------
+# Student Authentication
+# ---------------------------------------------------------------------------
+
+@student_bp.route("/login", methods=["POST"])
+def student_login():
+    """Authenticate a student via PRN only."""
+    payload = request.get_json(silent=True) or {}
+    prn = utils.sanitize(payload.get("prn"))
+
+    if not prn:
+        return jsonify({"success": False, "message": "PRN is required."}), 400
+
+    student = Student.query.filter_by(prn=prn).first()
+    if not student:
+        # Check if it's a valid PRN that hasn't registered yet
+        from models import ValidPRN
+        is_valid = ValidPRN.query.filter_by(prn=prn).first()
+        if is_valid:
+            return jsonify({"success": False, "message": "PRN found, but not registered.", "needs_registration": True}), 401
+        return jsonify({"success": False, "message": "Invalid PRN. Ask admin to add your PRN."}), 401
+
+    token = generate_student_token(current_app._get_current_object(), student.id, student.prn)
+    
+    return jsonify({
+        "success": True,
+        "message": "Login successful.",
+        "token": token,
+        "is_first_login": False,
+        "is_registered": bool(student.registration_id),
+        "student": student.to_dict()
+    })
+
+
+@student_bp.route("/change-password", methods=["POST"])
+@student_required
+def student_change_password():
+    """Deprecated: No passwords anymore."""
+    return jsonify({"success": False, "message": "Passwords are no longer used."}), 400
+
+
+@student_bp.route("/me", methods=["GET"])
+@student_required
+def student_me():
+    """Return the current student's profile."""
+    student_id = request.student_payload["student_id"]
+    student = db.session.get(Student, student_id)
+    if not student:
+        return jsonify({"success": False, "message": "Student not found."}), 404
+        
+    return jsonify({
+        "success": True,
+        "student": student.to_dict()
+    })
+
+
+# ---------------------------------------------------------------------------
 # Public endpoints
 # ---------------------------------------------------------------------------
 
 @student_bp.route("/register", methods=["POST"])
 def register_student():
     """
-    Register a new student.
-
-    Request body must be the full registration form. On success the record is
-    committed first and the welcome/parent emails are then attempted. Email
-    failures never roll back the registration; they are reported inside the
-    response and recorded in ``mail_logs``.
+    Public registration endpoint.
+    Requires PRN to be present in ValidPRN table.
     """
+    from models import ValidPRN
     payload = request.get_json(silent=True) or {}
     errors, cleaned = _validate_payload(payload)
 
-    # Only hit the database for duplicate checks when the payload is otherwise
-    # valid, so a malformed form is rejected without any DB work.
+    prn = cleaned.get("prn")
+    if prn:
+        # Check if PRN is in ValidPRN table
+        is_valid = ValidPRN.query.filter_by(prn=prn).first()
+        if not is_valid:
+            errors.append(f"PRN {prn} is not authorized for registration. Please contact admin.")
+            
+        # Check if student is already registered
+        student = Student.query.filter_by(prn=prn).first()
+        if student:
+            errors.append("This PRN is already registered.")
+
     if not errors:
         try:
-            errors += _duplicate_errors(payload)
-        except Exception as exc:  # noqa: BLE001 - DB connectivity / constraint errors
+            errors += _duplicate_errors(cleaned)
+        except Exception as exc:
             db.session.rollback()
             logger.exception("Database error during duplicate check")
             return jsonify({
@@ -142,13 +205,16 @@ def register_student():
     if errors:
         return jsonify({"success": False, "message": errors[0], "errors": errors}), 400
 
-    student = Student(registration_id=utils.generate_registration_id())
+    student = Student()
+    student.registration_id = utils.generate_registration_id()
+    student.is_first_login = False
     _apply_payload(student, cleaned)
+    
+    db.session.add(student)
 
     try:
-        db.session.add(student)
         db.session.commit()
-    except Exception as exc:  # noqa: BLE001 - DB connectivity / constraint errors
+    except Exception as exc:
         db.session.rollback()
         logger.exception("Database error while registering student")
         return jsonify({
@@ -157,15 +223,32 @@ def register_student():
             "errors": [str(exc)],
         }), 500
 
-    # Best effort: send the two emails after the row is safely persisted.
-    email_results = send_registration_emails(student)
-
     return jsonify({
         "success": True,
         "message": "Student registered successfully.",
         "student": student.to_dict(),
-        "emails": email_results,
     }), 201
+
+
+@student_bp.route("/schedule", methods=["GET"])
+def get_schedule():
+    """
+    Return all event sessions ordered by start time.
+    """
+    try:
+        sessions = EventSession.query.order_by(EventSession.start_time.asc()).all()
+        return jsonify({
+            "success": True,
+            "message": "Schedule fetched successfully.",
+            "schedule": [s.to_dict() for s in sessions],
+        })
+    except Exception as exc:
+        logger.exception("Database error while fetching schedule")
+        return jsonify({
+            "success": False,
+            "message": "Database error. Could not fetch schedule.",
+            "errors": [str(exc)],
+        }), 500
 
 
 @student_bp.route("/send-email", methods=["POST"])

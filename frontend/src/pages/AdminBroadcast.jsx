@@ -9,6 +9,7 @@ export default function AdminBroadcast() {
   const toast = useToast();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
+    recipient_type: "students",
     subject: "Important Update: First Year Induction",
     program_name: "First Year Induction Program",
     date: "",
@@ -29,7 +30,7 @@ export default function AdminBroadcast() {
       return;
     }
 
-    if (!window.confirm("Are you sure you want to broadcast this email to ALL enrolled students?")) {
+    if (!window.confirm(`Are you sure you want to broadcast this email to ALL ${formData.recipient_type}?`)) {
       return;
     }
 
@@ -68,7 +69,7 @@ export default function AdminBroadcast() {
                 <div>
                   <h2 className="text-lg font-bold text-slate-900">Send Event Details</h2>
                   <p className="text-sm text-slate-500">
-                    This email will be sent to <strong>all registered students</strong> in the background.
+                    This email will be sent to <strong>all registered recipients</strong> in the background.
                     The official schedule documents will be attached automatically.
                   </p>
                 </div>
@@ -76,6 +77,20 @@ export default function AdminBroadcast() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-5">
+              <div>
+                <label className="mb-1 block text-sm font-semibold text-slate-700">Send To</label>
+                <select
+                  name="recipient_type"
+                  className="input-field"
+                  value={formData.recipient_type}
+                  onChange={handleChange}
+                >
+                  <option value="students">Students Only</option>
+                  <option value="parents">Parents Only</option>
+                  <option value="both">Both Students and Parents</option>
+                </select>
+              </div>
+
               <div>
                 <label className="mb-1 block text-sm font-semibold text-slate-700">Email Subject</label>
                 <input
@@ -154,7 +169,7 @@ export default function AdminBroadcast() {
                   disabled={loading}
                 >
                   <FaPaperPlane />
-                  {loading ? "Starting Broadcast..." : "Send to All Students"}
+                  {loading ? "Starting Broadcast..." : `Send to ${formData.recipient_type === 'both' ? 'All' : formData.recipient_type.charAt(0).toUpperCase() + formData.recipient_type.slice(1)}`}
                 </button>
               </div>
             </form>

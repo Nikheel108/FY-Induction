@@ -119,6 +119,50 @@ def admin_required(fn):
 
 
 # ---------------------------------------------------------------------------
+# Student authentication (stateless signed tokens via itsdangerous)
+# ---------------------------------------------------------------------------
+
+def _student_serializer(app):
+    """Build a signed serializer for students."""
+    return URLSafeTimedSerializer(app.config["SECRET_KEY"], salt="student-auth")
+
+
+def generate_student_token(app, student_id, prn):
+    """Create a signed token for a student."""
+    return _student_serializer(app).dumps({"student_id": student_id, "prn": prn})
+
+
+def validate_student_token(app, token):
+    """Return the payload if the token is valid, otherwise raise."""
+    # Tokens expire in 24 hours
+    return _student_serializer(app).loads(token, max_age=24 * 3600)
+
+
+def student_required(fn):
+    """
+    Decorator protecting student-only endpoints.
+    Expects ``Authorization: Bearer <token>``.
+    """
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        auth = request.headers.get("Authorization", "")
+        token = auth.removeprefix("Bearer ").strip() if auth.startswith("Bearer ") else ""
+        if not token:
+            return jsonify({"success": False, "message": "Authentication required."}), 401
+        try:
+            payload = validate_student_token(current_app._get_current_object(), token)
+            # Attach the student payload to the request object for easy access
+            request.student_payload = payload
+        except SignatureExpired:
+            return jsonify({"success": False, "message": "Session expired. Please log in again."}), 401
+        except BadSignature:
+            return jsonify({"success": False, "message": "Invalid or tampered token."}), 401
+        return fn(*args, **kwargs)
+
+    return wrapper
+
+
+# ---------------------------------------------------------------------------
 # Registration receipt PDF
 # ---------------------------------------------------------------------------
 
