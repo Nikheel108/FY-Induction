@@ -261,13 +261,13 @@ export default function AdminUploadStudents() {
                               />
                             </div>
                           ) : (
-                            <div>
+                            <div className="flex flex-col">
                               {p.expected_name ? (
-                                <p className="font-semibold text-slate-800">{p.expected_name}</p>
+                                <span className="font-semibold text-slate-800">{p.expected_name}</span>
                               ) : (
-                                <p className="text-xs text-slate-400 italic">No name provided</p>
+                                <span className="text-slate-400">-</span>
                               )}
-                              {p.expected_department && <p className="text-xs text-slate-500">{p.expected_department}</p>}
+                              {p.expected_department && <span className="text-xs text-slate-500">{p.expected_department}</span>}
                             </div>
                           )}
                         </td>

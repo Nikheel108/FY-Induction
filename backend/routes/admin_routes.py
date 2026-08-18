@@ -13,6 +13,8 @@ import threading
 
 from services.utils import admin_required, generate_admin_token, validate_admin_token
 from services.email_service import send_broadcast_emails
+from services.database import db
+from models import ValidPRN, Student
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/api/admin")
 
