@@ -6,6 +6,7 @@ import { useToast } from "../context/ToastContext";
 
 const LINKS = [
   { to: "/admin/dashboard", label: "Dashboard", icon: FaChartBar },
+  { to: "/admin/upload-students", label: "Upload Students", icon: FaUsers },
   { to: "/admin/attendance", label: "Attendance", icon: FaClipboardCheck },
   { to: "/admin/sessions", label: "Event Sessions", icon: FaChartBar }, // Reuse icon or add new
   { to: "/admin/highlights", label: "Highlights", icon: FaImage },

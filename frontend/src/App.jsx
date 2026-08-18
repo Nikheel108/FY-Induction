@@ -6,6 +6,7 @@ import Register from "./pages/Register";
 import Success from "./pages/Success";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminUploadStudents from "./pages/AdminUploadStudents";
 import StudentDetails from "./pages/StudentDetails";
 import NotFound from "./pages/NotFound";
 import Attendance from "./pages/Attendance";           // new
@@ -34,6 +35,14 @@ export default function App() {
         element={
           <ProtectedRoute>
             <AdminDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/upload-students"
+        element={
+          <ProtectedRoute>
+            <AdminUploadStudents />
           </ProtectedRoute>
         }
       />

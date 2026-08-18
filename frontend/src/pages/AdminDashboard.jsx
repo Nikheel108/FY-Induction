@@ -277,9 +277,9 @@ export default function AdminDashboard() {
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-2 mt-2 sm:mt-0">
-                  <button type="button" className="btn-secondary !px-3 !py-2 text-primary-700 w-full sm:w-auto" onClick={() => setShowUploadPrn(true)}>
+                  <Link to="/admin/upload-students" className="btn-secondary !px-3 !py-2 text-primary-700 w-full sm:w-auto flex items-center gap-2 justify-center">
                     <FaUpload /> <span className="inline md:inline">Upload PRNs</span>
-                  </button>
+                  </Link>
                   <button type="button" className="btn-secondary !px-3 !py-2 text-emerald-700 w-full sm:w-auto" onClick={() => handleExport("excel")}>
                     <FaFileExcel /> <span className="inline md:inline">Excel</span>
                   </button>

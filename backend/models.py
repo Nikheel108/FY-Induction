@@ -195,11 +195,15 @@ class ValidPRN(db.Model):
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     prn = db.Column(db.String(30), unique=True, nullable=False, index=True)
+    expected_name = db.Column(db.String(100), nullable=True)
+    expected_department = db.Column(db.String(100), nullable=True)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
     def to_dict(self):
         return {
             "id": self.id,
             "prn": self.prn,
+            "expected_name": self.expected_name,
+            "expected_department": self.expected_department,
             "created_at": self.created_at.isoformat() + "Z" if self.created_at else None,
         }
