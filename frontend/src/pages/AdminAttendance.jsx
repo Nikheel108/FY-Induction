@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { FaFileExcel, FaDownload } from 'react-icons/fa';
 import Sidebar from '../components/Sidebar';
 import Spinner from '../components/Spinner';
-import { fetchAttendance, adminMarkAttendance, adminDemarkAttendance } from '../services/attendanceService';
+import { fetchAttendance, adminMarkAttendance, adminDemarkAttendance, exportAttendance } from '../services/attendanceService';
 import { fetchEventSessions } from '../services/adminService';
 import { useToast } from '../context/ToastContext';
 import { FaTrash, FaCheck } from 'react-icons/fa';
@@ -54,22 +54,8 @@ export default function AdminAttendance() {
   // Export function
   const handleExport = async (format) => {
     try {
-      const params = new URLSearchParams();
-      if (filters.date) params.append('date', filters.date);
-      if (filters.prn) params.append('prn', filters.prn);
-      if (filters.student_name) params.append('student_name', filters.student_name);
-      if (filters.event_session_id) params.append('event_session_id', filters.event_session_id);
-
-      const baseURL = import.meta.env.VITE_API_URL || '/api';
-      const url = `${baseURL}/admin/attendance/export/${format}?${params.toString()}`;
-      const token = localStorage.getItem('admin_token');
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      if (!response.ok) throw new Error('Export failed');
-      const blob = await response.blob();
+      toast.info('Generating export file, please wait...');
+      const blob = await exportAttendance(format, filters);
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
       link.download = `attendance_export.${format === 'excel' ? 'xlsx' : 'csv'}`;

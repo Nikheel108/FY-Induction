@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
-import { FaPlus, FaCalendarAlt, FaTrash, FaUserTie, FaMapMarkerAlt, FaEdit, FaTimes } from "react-icons/fa";
+import { useEffect, useState, useMemo } from "react";
+import { FaPlus, FaCalendarAlt, FaTrash, FaUserTie, FaMapMarkerAlt, FaEdit, FaTimes, FaFilter } from "react-icons/fa";
+import { Link } from "react-router-dom";
+import { FaHome } from "react-icons/fa";
 
 import { useToast } from "../context/ToastContext";
 import { fetchEventSessions, createEventSession, deleteEventSession, updateEventSession } from "../services/adminService";
 import Sidebar from "../components/Sidebar";
-import { Link } from "react-router-dom";
-import { FaHome } from "react-icons/fa";
 
 export default function AdminEventSessions() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -13,6 +13,7 @@ export default function AdminEventSessions() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [selectedDateFilter, setSelectedDateFilter] = useState("all");
   const toast = useToast();
 
   const [formData, setFormData] = useState({
@@ -39,6 +40,41 @@ export default function AdminEventSessions() {
     loadSessions();
   }, []);
 
+  // Compute unique date keys (YYYY-MM-DD) and counts for date-based filtering
+  const availableDates = useMemo(() => {
+    const dateMap = {};
+    sessions.forEach((s) => {
+      if (!s.start_time) return;
+      const d = new Date(s.start_time);
+      if (isNaN(d.getTime())) return;
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      const label = d.toLocaleDateString(undefined, {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+      });
+
+      if (!dateMap[key]) {
+        dateMap[key] = { key, label, count: 0 };
+      }
+      dateMap[key].count += 1;
+    });
+    return Object.values(dateMap).sort((a, b) => a.key.localeCompare(b.key));
+  }, [sessions]);
+
+  // Filter sessions according to selected date
+  const displayedSessions = useMemo(() => {
+    if (selectedDateFilter === "all") return sessions;
+    return sessions.filter((s) => {
+      if (!s.start_time) return false;
+      const d = new Date(s.start_time);
+      if (isNaN(d.getTime())) return false;
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      return key === selectedDateFilter;
+    });
+  }, [sessions, selectedDateFilter]);
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -46,20 +82,20 @@ export default function AdminEventSessions() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.title || !formData.start_time || !formData.duration_minutes) {
-      toast.error("Please fill in all fields.");
+      toast.error("Please fill in all required fields.");
       return;
     }
 
     try {
       setSubmitting(true);
-      // Convert local datetime-local value to ISO string with proper UTC timezone
+      // Convert local datetime-local value to ISO string with UTC timezone
       const localDate = new Date(formData.start_time);
       const payload = {
-        title: formData.title,
+        title: formData.title.trim(),
         start_time: localDate.toISOString(),
         duration_minutes: parseInt(formData.duration_minutes, 10),
-        resource_speaker: formData.resource_speaker || "-",
-        location: formData.location || "-",
+        resource_speaker: formData.resource_speaker.trim() || "-",
+        location: formData.location.trim() || "-",
       };
 
       if (editingId) {
@@ -80,20 +116,34 @@ export default function AdminEventSessions() {
   };
 
   const handleEdit = (session) => {
-    // format start_time for datetime-local input
-    const dateObj = new Date(session.start_time);
-    // adjust for local timezone offset to display properly in datetime-local
-    const offset = dateObj.getTimezoneOffset() * 60000;
-    const localISOTime = (new Date(dateObj.getTime() - offset)).toISOString().slice(0, 16);
-    
-    setFormData({
-      title: session.title,
-      start_time: localISOTime,
-      duration_minutes: session.duration_minutes,
-      resource_speaker: session.resource_speaker === "-" ? "" : session.resource_speaker,
-      location: session.location === "-" ? "" : session.location,
-    });
-    setEditingId(session.id);
+    try {
+      let localISOTime = "";
+      if (session.start_time) {
+        const d = new Date(session.start_time);
+        if (!isNaN(d.getTime())) {
+          const year = d.getFullYear();
+          const month = String(d.getMonth() + 1).padStart(2, '0');
+          const day = String(d.getDate()).padStart(2, '0');
+          const hours = String(d.getHours()).padStart(2, '0');
+          const minutes = String(d.getMinutes()).padStart(2, '0');
+          localISOTime = `${year}-${month}-${day}T${hours}:${minutes}`;
+        }
+      }
+
+      setFormData({
+        title: session.title || "",
+        start_time: localISOTime,
+        duration_minutes: session.duration_minutes || 60,
+        resource_speaker: (session.resource_speaker === "-" || !session.resource_speaker) ? "" : session.resource_speaker,
+        location: (session.location === "-" || !session.location) ? "" : session.location,
+      });
+      setEditingId(session.id);
+      toast.info(`Editing session: ${session.title}`);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } catch (err) {
+      console.error("Failed to format date for edit:", err);
+      toast.error("Failed to load session details for editing.");
+    }
   };
 
   const handleCancelEdit = () => {
@@ -106,6 +156,7 @@ export default function AdminEventSessions() {
     try {
       await deleteEventSession(id);
       toast.success("Event session deleted successfully!");
+      if (editingId === id) handleCancelEdit();
       loadSessions();
     } catch (err) {
       toast.error(err.message || "Failed to delete session.");
@@ -136,156 +187,274 @@ export default function AdminEventSessions() {
         </header>
 
         <main className="mx-auto w-full max-w-7xl flex-1 space-y-6 p-4 sm:p-6 animate-fade-up">
-          <header>
-            <p className="mt-1 text-sm text-slate-500">
-              Create and view time-bound attendance sessions.
-            </p>
+          <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <p className="mt-1 text-sm text-slate-500">
+                Create, edit, and filter time-bound attendance sessions by date.
+              </p>
+            </div>
+
+            {/* Date Filter Dropdown for Mobile / Quick Selection */}
+            {availableDates.length > 0 && (
+              <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm">
+                <FaFilter className="text-slate-400 text-xs" />
+                <span className="text-xs font-semibold text-slate-500">Filter Date:</span>
+                <select
+                  value={selectedDateFilter}
+                  onChange={(e) => setSelectedDateFilter(e.target.value)}
+                  className="bg-transparent text-xs font-bold text-slate-800 focus:outline-none cursor-pointer"
+                >
+                  <option value="all">All Dates ({sessions.length})</option>
+                  {availableDates.map((item) => (
+                    <option key={item.key} value={item.key}>
+                      {item.label} ({item.count})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </header>
 
-      <div className="grid gap-6 md:grid-cols-3">
-        {/* Create Session Form */}
-        <div className="card p-5 md:col-span-1 h-fit border-t-4 border-t-primary-500">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-              {editingId ? <FaEdit className="text-primary-600" /> : <FaPlus className="text-primary-600" />}
-              {editingId ? "Edit Session" : "New Session"}
-            </h2>
-            {editingId && (
-              <button type="button" onClick={handleCancelEdit} className="text-slate-400 hover:text-slate-600" title="Cancel Edit">
-                <FaTimes />
-              </button>
-            )}
-          </div>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-sm font-semibold text-slate-700">Title</label>
-              <input
-                type="text"
-                name="title"
-                value={formData.title}
-                onChange={handleChange}
-                placeholder="e.g. Day 1 Morning"
-                className="input-field mt-1"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-slate-700">Start Time (Local)</label>
-              <input
-                type="datetime-local"
-                name="start_time"
-                value={formData.start_time}
-                onChange={handleChange}
-                className="input-field mt-1"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-slate-700">Resource Speaker (Optional)</label>
-              <input
-                type="text"
-                name="resource_speaker"
-                value={formData.resource_speaker}
-                onChange={handleChange}
-                placeholder="e.g. Dr. Smith"
-                className="input-field mt-1"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-slate-700">Location (Optional)</label>
-              <input
-                type="text"
-                name="location"
-                value={formData.location}
-                onChange={handleChange}
-                placeholder="e.g. Main Auditorium"
-                className="input-field mt-1"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-semibold text-slate-700">Duration (Minutes)</label>
-              <input
-                type="number"
-                name="duration_minutes"
-                value={formData.duration_minutes}
-                onChange={handleChange}
-                min="1"
-                className="input-field mt-1"
-                required
-              />
-              <p className="text-xs text-slate-500 mt-1">Students can mark attendance until Duration + 5 mins grace period.</p>
-            </div>
-            <button
-              type="submit"
-              disabled={submitting}
-              className="btn-primary w-full justify-center"
-            >
-              {submitting ? "Saving..." : editingId ? "Update Session" : "Create Session"}
-            </button>
-          </form>
-        </div>
+          <div className="grid gap-6 md:grid-cols-3">
+            {/* Session Form (Create / Edit) */}
+            <div className={`card p-5 md:col-span-1 h-fit border-t-4 ${editingId ? "border-t-amber-500 bg-amber-50/20" : "border-t-primary-500"}`}>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                  {editingId ? <FaEdit className="text-amber-600" /> : <FaPlus className="text-primary-600" />}
+                  {editingId ? "Edit Session" : "New Session"}
+                </h2>
+                {editingId && (
+                  <button
+                    type="button"
+                    onClick={handleCancelEdit}
+                    className="text-xs bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold px-2 py-1 rounded flex items-center gap-1 transition"
+                  >
+                    <FaTimes /> Cancel
+                  </button>
+                )}
+              </div>
 
-        {/* Sessions List */}
-        <div className="card p-5 md:col-span-2">
-          <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2">
-            <FaCalendarAlt className="text-primary-600" /> All Sessions
-          </h2>
-          
-          {loading ? (
-            <p className="text-sm text-slate-500">Loading sessions...</p>
-          ) : sessions.length === 0 ? (
-            <p className="text-sm text-slate-500">No sessions created yet.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm text-slate-600">
-                <thead className="bg-slate-50 text-xs uppercase text-slate-500">
-                  <tr>
-                    <th className="px-4 py-3 font-semibold rounded-tl-lg">Title</th>
-                    <th className="px-4 py-3 font-semibold">Start Time (UTC)</th>
-                    <th className="px-4 py-3 font-semibold text-right">Duration</th>
-                    <th className="px-4 py-3 font-semibold text-center rounded-tr-lg">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {sessions.map((s) => (
-                    <tr key={s.id} className="hover:bg-slate-50 transition">
-                      <td className="px-4 py-3 font-medium text-slate-800">
-                        {s.title}
-                        <div className="text-xs text-slate-500 font-normal mt-1 flex flex-wrap gap-3">
-                          {s.resource_speaker !== "-" && <span className="flex items-center gap-1"><FaUserTie className="text-primary-500" /> {s.resource_speaker}</span>}
-                          {s.location !== "-" && <span className="flex items-center gap-1"><FaMapMarkerAlt className="text-primary-500" /> {s.location}</span>}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">{new Date(s.start_time).toLocaleString()}</td>
-                      <td className="px-4 py-3 text-right">{s.duration_minutes} mins</td>
-                      <td className="px-4 py-3 text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          <button
-                            onClick={() => handleEdit(s)}
-                            className="p-2 text-primary-600 hover:bg-primary-50 rounded-lg transition"
-                            title="Edit Session"
-                          >
-                            <FaEdit />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(s.id)}
-                            className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition"
-                            title="Delete Session"
-                          >
-                            <FaTrash />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700">Session Title</label>
+                  <input
+                    type="text"
+                    name="title"
+                    value={formData.title}
+                    onChange={handleChange}
+                    placeholder="e.g. Day 1 Morning Session"
+                    className="input-field mt-1"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700">Start Time (Local Date & Time)</label>
+                  <input
+                    type="datetime-local"
+                    name="start_time"
+                    value={formData.start_time}
+                    onChange={handleChange}
+                    className="input-field mt-1"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700">Resource Speaker (Optional)</label>
+                  <input
+                    type="text"
+                    name="resource_speaker"
+                    value={formData.resource_speaker}
+                    onChange={handleChange}
+                    placeholder="e.g. Dr. A. P. Sharma"
+                    className="input-field mt-1"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700">Location / Venue (Optional)</label>
+                  <input
+                    type="text"
+                    name="location"
+                    value={formData.location}
+                    onChange={handleChange}
+                    placeholder="e.g. Main Auditorium"
+                    className="input-field mt-1"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700">Duration (Minutes)</label>
+                  <input
+                    type="number"
+                    name="duration_minutes"
+                    value={formData.duration_minutes}
+                    onChange={handleChange}
+                    min="1"
+                    className="input-field mt-1"
+                    required
+                  />
+                  <p className="text-xs text-slate-500 mt-1">
+                    Attendance remains open until Duration + 5 mins grace period.
+                  </p>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className={`w-full py-2.5 rounded-lg font-bold text-white transition-all shadow-md ${
+                    editingId
+                      ? "bg-amber-600 hover:bg-amber-700"
+                      : "bg-primary-600 hover:bg-primary-700"
+                  }`}
+                >
+                  {submitting ? "Saving..." : editingId ? "Update Session" : "Create Session"}
+                </button>
+              </form>
             </div>
-          )}
-        </div>
+
+            {/* Sessions List with Date Filter Tabs */}
+            <div className="card p-5 md:col-span-2 space-y-4">
+              {/* Date Filter Pills */}
+              <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setSelectedDateFilter("all")}
+                  className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition ${
+                    selectedDateFilter === "all"
+                      ? "bg-primary-600 text-white shadow-sm"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                  }`}
+                >
+                  All Dates ({sessions.length})
+                </button>
+                {availableDates.map((item) => (
+                  <button
+                    key={item.key}
+                    type="button"
+                    onClick={() => setSelectedDateFilter(item.key)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition flex items-center gap-1.5 ${
+                      selectedDateFilter === item.key
+                        ? "bg-primary-600 text-white shadow-sm"
+                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    }`}
+                  >
+                    <FaCalendarAlt className="text-[10px]" />
+                    {item.label} ({item.count})
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex justify-between items-center pt-2">
+                <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                  <FaCalendarAlt className="text-primary-600" />
+                  {selectedDateFilter === "all"
+                    ? "All Event Sessions"
+                    : `Sessions for ${availableDates.find(d => d.key === selectedDateFilter)?.label || selectedDateFilter}`}
+                </h2>
+                <span className="text-xs font-semibold text-slate-400 bg-slate-100 px-2.5 py-1 rounded-md">
+                  Showing {displayedSessions.length} of {sessions.length}
+                </span>
+              </div>
+
+              {loading ? (
+                <p className="text-sm text-slate-500 py-8 text-center">Loading sessions...</p>
+              ) : displayedSessions.length === 0 ? (
+                <div className="py-12 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200">
+                  <FaCalendarAlt className="mx-auto text-3xl text-slate-300 mb-2" />
+                  <p className="text-sm font-semibold text-slate-600">No sessions found for this date.</p>
+                  {selectedDateFilter !== "all" && (
+                    <button
+                      onClick={() => setSelectedDateFilter("all")}
+                      className="mt-2 text-xs text-primary-600 hover:underline font-bold"
+                    >
+                      Show all sessions
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm text-slate-600">
+                    <thead className="bg-slate-50 text-xs uppercase text-slate-500 border-b border-slate-200">
+                      <tr>
+                        <th className="px-4 py-3 font-semibold rounded-tl-lg">Title & Speaker</th>
+                        <th className="px-4 py-3 font-semibold">Start Time (Local)</th>
+                        <th className="px-4 py-3 font-semibold text-right">Duration</th>
+                        <th className="px-4 py-3 font-semibold text-center rounded-tr-lg">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {displayedSessions.map((s) => {
+                        const isEditingThis = editingId === s.id;
+                        return (
+                          <tr
+                            key={s.id}
+                            className={`transition ${
+                              isEditingThis ? "bg-amber-50/60 font-semibold" : "hover:bg-slate-50"
+                            }`}
+                          >
+                            <td className="px-4 py-3 font-medium text-slate-800">
+                              <div className="flex items-center gap-2">
+                                <span>{s.title}</span>
+                                {isEditingThis && (
+                                  <span className="bg-amber-100 text-amber-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                                    Editing
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-xs text-slate-500 font-normal mt-1 flex flex-wrap gap-3">
+                                {s.resource_speaker !== "-" && (
+                                  <span className="flex items-center gap-1">
+                                    <FaUserTie className="text-primary-500" /> {s.resource_speaker}
+                                  </span>
+                                )}
+                                {s.location !== "-" && (
+                                  <span className="flex items-center gap-1">
+                                    <FaMapMarkerAlt className="text-primary-500" /> {s.location}
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-slate-700">
+                              {s.start_time ? new Date(s.start_time).toLocaleString() : "—"}
+                            </td>
+                            <td className="px-4 py-3 text-right font-mono font-medium">
+                              {s.duration_minutes} mins
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <div className="flex items-center justify-center gap-1">
+                                <button
+                                  onClick={() => handleEdit(s)}
+                                  className={`p-2 rounded-lg transition ${
+                                    isEditingThis
+                                      ? "bg-amber-500 text-white"
+                                      : "text-primary-600 hover:bg-primary-50"
+                                  }`}
+                                  title="Edit Session"
+                                >
+                                  <FaEdit />
+                                </button>
+                                <button
+                                  onClick={() => handleDelete(s.id)}
+                                  className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition"
+                                  title="Delete Session"
+                                >
+                                  <FaTrash />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        </main>
       </div>
-    </main>
-  </div>
-</div>
+    </div>
   );
 }

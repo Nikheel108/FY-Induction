@@ -13,10 +13,11 @@ import Attendance from "./pages/Attendance";           // new
 import AdminAttendance from "./pages/AdminAttendance"; // new
 import AdminBroadcast from "./pages/AdminBroadcast";
 import AdminEventSessions from "./pages/AdminEventSessions";
-import Highlights from "./pages/Highlights";
 import AdminHighlights from "./pages/AdminHighlights";
 import StudentLogin from "./pages/StudentLogin";
 import StudentDashboard from "./pages/StudentDashboard";
+import Contact from "./pages/Contact";
+import AdminContactQueries from "./pages/AdminContactQueries";
 
 export default function App() {
   return (
@@ -26,6 +27,7 @@ export default function App() {
       <Route path="/success" element={<Success />} />
       <Route path="/admin/login" element={<AdminLogin />} />
       <Route path="/attendance" element={<Attendance />} />  {/* public attendance kiosk */}
+      <Route path="/contact" element={<Contact />} />        {/* public contact us page */}
       <Route path="/student-login" element={<StudentLogin />} />
       <Route path="/student/register" element={<Register />} />
       <Route path="/student/dashboard" element={<StudentDashboard />} />
@@ -87,10 +89,10 @@ export default function App() {
         }
       />
       <Route
-        path="/highlights"
+        path="/admin/contact-queries"
         element={
           <ProtectedRoute>
-            <Highlights />
+            <AdminContactQueries />
           </ProtectedRoute>
         }
       />

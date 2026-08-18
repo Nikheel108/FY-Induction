@@ -27,8 +27,10 @@ export default function Footer() {
           <h4 className="text-sm font-bold text-slate-900">Quick Links</h4>
           <ul className="mt-3 space-y-2 text-sm text-slate-500">
             <li><Link to="/" className="transition hover:text-primary-700">Home</Link></li>
-            <li><Link to="/register" className="transition hover:text-primary-700">Student Registration</Link></li>
-            <li><Link to="/admin/login" className="transition hover:text-primary-700">Admin Login</Link></li>
+            <li><Link to="/attendance" className="transition hover:text-primary-700">Mark Attendance</Link></li>
+            <li><Link to="/contact" className="transition hover:text-primary-700">Contact & Support</Link></li>
+            <li><Link to="/student-login" className="transition hover:text-primary-700">Student Access</Link></li>
+            <li><Link to="/admin/login" className="transition hover:text-primary-700">Admin Portal</Link></li>
           </ul>
         </div>
 

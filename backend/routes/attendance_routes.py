@@ -7,7 +7,7 @@ import io
 import json
 import logging
 import uuid
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, timezone
 from urllib.request import urlopen
 
 from flask import Blueprint, jsonify, request, g, send_file
@@ -101,10 +101,7 @@ def create_event_session():
         return jsonify({"success": False, "message": "Missing required fields."}), 400
         
     try:
-        duration = int(duration)
-        start_time = datetime.fromisoformat(start_time_str.replace("Z", "+00:00"))
-        # Store as naive UTC
-        start_time = start_time.replace(tzinfo=None)
+        start_time = datetime.fromisoformat(start_time_str.replace("Z", "+00:00")).astimezone(timezone.utc).replace(tzinfo=None)
     except ValueError:
         return jsonify({"success": False, "message": "Invalid duration or start time format."}), 400
 
@@ -149,7 +146,7 @@ def edit_event_session(session_id):
 
     if "start_time" in data and data["start_time"].strip():
         try:
-            dt = datetime.fromisoformat(data["start_time"].replace("Z", "+00:00"))
+            dt = datetime.fromisoformat(data["start_time"].replace("Z", "+00:00")).astimezone(timezone.utc).replace(tzinfo=None)
             es.start_time = dt
         except ValueError:
             pass

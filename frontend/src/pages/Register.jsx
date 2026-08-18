@@ -23,11 +23,12 @@ export default function Register() {
     // If they arrived from Student Access page, they have the PRN in state.
     const prn = location.state?.prn;
     if (!prn) {
+      toast.info("Please enter your PRN to start registration.");
       navigate("/student-login");
       return;
     }
     setStudent({ prn });
-  }, [navigate, location.state]);
+  }, [navigate, location.state, toast]);
 
   const handleSubmit = async (data) => {
     setLoading(true);

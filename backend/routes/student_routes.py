@@ -10,7 +10,7 @@ import logging
 from flask import Blueprint, current_app, jsonify, request, send_file
 from io import BytesIO
 
-from models import MailLog, Student, EventSession
+from models import MailLog, Student, EventSession, ContactQuery
 from services import utils
 from services.database import db
 from services.email_service import send_registration_emails
@@ -474,3 +474,56 @@ def get_mail_logs(student_id):
     return jsonify({"success": True,
                     "message": "Mail logs fetched successfully.",
                     "mail_logs": [log.to_dict() for log in logs]})
+
+
+# ---------------------------------------------------------------------------
+# Contact Query submission
+# ---------------------------------------------------------------------------
+
+@student_bp.route("/contact", methods=["POST"])
+def submit_contact_query():
+    """
+    Public endpoint for students to submit contact queries & feedback.
+    """
+    payload = request.get_json(silent=True) or {}
+    name = utils.sanitize(payload.get("name"))
+    prn = utils.sanitize(payload.get("prn"))
+    email = utils.sanitize(payload.get("email"))
+    description = utils.sanitize(payload.get("description"))
+
+    errors = []
+    if not name:
+        errors.append("Full name is required.")
+    if not prn:
+        errors.append("PRN is required.")
+    if not email:
+        errors.append("Email address is required.")
+    elif not utils.is_valid_email(email):
+        errors.append("Invalid email address format.")
+    if not description:
+        errors.append("Description/Query message is required.")
+
+    if errors:
+        return jsonify({"success": False, "message": errors[0], "errors": errors}), 400
+
+    query_obj = ContactQuery(
+        name=name,
+        prn=prn,
+        email=email,
+        description=description,
+        status="pending"
+    )
+    db.session.add(query_obj)
+
+    try:
+        db.session.commit()
+    except Exception as exc:
+        db.session.rollback()
+        logger.exception("Database error while saving contact query")
+        return jsonify({"success": False, "message": "Database error. Could not submit query."}), 500
+
+    return jsonify({
+        "success": True,
+        "message": "Your message has been submitted successfully! We will get back to you soon.",
+        "query": query_obj.to_dict()
+    }), 201

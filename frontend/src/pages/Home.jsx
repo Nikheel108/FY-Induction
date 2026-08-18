@@ -27,9 +27,9 @@ const FEATURES = [
     text: "Mark your attendance securely during active event sessions.",
   },
   {
-    icon: FaImages,
-    title: "Event Highlights",
-    text: "Explore photos and memories from past induction events and sessions.",
+    icon: FaCalendarAlt,
+    title: "Event Schedule",
+    text: "View day-wise event schedules, timings, speakers, and venue details.",
   },
   {
     icon: FaEnvelope,

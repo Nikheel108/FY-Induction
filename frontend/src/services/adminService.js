@@ -34,3 +34,12 @@ export const uploadPrnFile = (formData) =>
   }).then((res) => res.data);
 export const uploadPrns = (prns) =>
   api.post("/admin/upload-prns", { prns }).then((res) => res.data);
+
+export const getContactQueries = (params) =>
+  api.get("/admin/contact-queries", { params }).then((res) => res.data);
+
+export const updateContactQueryStatus = (id, status) =>
+  api.patch(`/admin/contact-queries/${id}`, { status }).then((res) => res.data);
+
+export const deleteContactQuery = (id) =>
+  api.delete(`/admin/contact-queries/${id}`).then((res) => res.data);

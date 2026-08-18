@@ -14,7 +14,7 @@ import threading
 from services.utils import admin_required, generate_admin_token, validate_admin_token
 from services.email_service import send_broadcast_emails
 from services.database import db
-from models import ValidPRN, Student
+from models import ValidPRN, Student, ContactQuery
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/api/admin")
 
@@ -294,4 +294,60 @@ def upload_file():
         return jsonify({"success": False, "message": f"Error parsing file: {str(e)}"}), 500
 
     return jsonify({"success": True, "message": f"Successfully processed file. Added {added} new PRNs, updated {updated}."})
+
+
+@admin_bp.route("/contact-queries", methods=["GET"])
+@admin_required
+def list_contact_queries():
+    """List all contact queries with optional status filter."""
+    status_filter = request.args.get("status")
+    query = ContactQuery.query
+
+    if status_filter and status_filter in ("pending", "resolved"):
+        query = query.filter_by(status=status_filter)
+
+    queries = query.order_by(ContactQuery.created_at.desc()).all()
+    pending_count = ContactQuery.query.filter_by(status="pending").count()
+    total_count = ContactQuery.query.count()
+
+    return jsonify({
+        "success": True,
+        "queries": [q.to_dict() for q in queries],
+        "stats": {
+            "pending": pending_count,
+            "total": total_count,
+        }
+    })
+
+
+@admin_bp.route("/contact-queries/<int:query_id>", methods=["PATCH"])
+@admin_required
+def update_contact_query_status(query_id):
+    """Update status of a contact query (e.g. pending -> resolved)."""
+    q = db.session.get(ContactQuery, query_id)
+    if not q:
+        return jsonify({"success": False, "message": "Query not found."}), 404
+
+    data = request.get_json() or {}
+    new_status = data.get("status", "").strip().lower()
+    if new_status not in ("pending", "resolved"):
+        return jsonify({"success": False, "message": "Invalid status value."}), 400
+
+    q.status = new_status
+    db.session.commit()
+    return jsonify({"success": True, "message": "Query status updated.", "query": q.to_dict()})
+
+
+@admin_bp.route("/contact-queries/<int:query_id>", methods=["DELETE"])
+@admin_required
+def delete_contact_query(query_id):
+    """Delete a contact query."""
+    q = db.session.get(ContactQuery, query_id)
+    if not q:
+        return jsonify({"success": False, "message": "Query not found."}), 404
+
+    db.session.delete(q)
+    db.session.commit()
+    return jsonify({"success": True, "message": "Query deleted successfully."})
+
 

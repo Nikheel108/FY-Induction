@@ -2,7 +2,7 @@ import { useEffect, useState, useRef, useMemo } from "react";
 import { FaPlus, FaTrash, FaImage, FaDownload } from "react-icons/fa";
 import Sidebar from "../components/Sidebar";
 import { useToast } from "../context/ToastContext";
-import { getHighlights, createHighlight, deleteHighlight } from "../services/highlightService";
+import { getHighlights, createHighlight, deleteHighlight, exportHighlightsPDF } from "../services/highlightService";
 import { Link } from "react-router-dom";
 import { FaHome } from "react-icons/fa";
 
@@ -109,21 +109,8 @@ export default function AdminHighlights() {
 
   const handleExportPDF = async () => {
     try {
-      const baseURL = import.meta.env.VITE_API_URL || '/api';
-      const url = `${baseURL}/admin/highlights/export/pdf${selectedSpeaker ? `?speaker=${encodeURIComponent(selectedSpeaker)}` : ''}`;
-      const token = localStorage.getItem('admin_token');
-      
-      toast.success("Generating PDF, please wait...");
-      
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      if (!response.ok) throw new Error('Export failed');
-      
-      const blob = await response.blob();
+      toast.info("Generating PDF, please wait...");
+      const blob = await exportHighlightsPDF(selectedSpeaker);
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
       link.download = `Activities_Report${selectedSpeaker ? `_${selectedSpeaker}` : ''}.pdf`;

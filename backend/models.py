@@ -206,4 +206,28 @@ class ValidPRN(db.Model):
             "expected_name": self.expected_name,
             "expected_department": self.expected_department,
             "created_at": self.created_at.isoformat() + "Z" if self.created_at else None,
+        }
+
+
+class ContactQuery(db.Model):
+    """Student contact & query submissions."""
+    __tablename__ = "contact_queries"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    name = db.Column(db.String(150), nullable=False)
+    prn = db.Column(db.String(30), nullable=False, index=True)
+    email = db.Column(db.String(150), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    status = db.Column(db.String(20), nullable=False, default="pending")  # pending | resolved
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "name": self.name,
+            "prn": self.prn,
+            "email": self.email,
+            "description": self.description,
+            "status": self.status,
+            "created_at": self.created_at.isoformat() + "Z" if self.created_at else None,
         }

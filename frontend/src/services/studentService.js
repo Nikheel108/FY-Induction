@@ -15,6 +15,9 @@ export const downloadReceipt = async (studentId) => {
   return response.data;
 };
 
+export const submitContactQuery = (payload) =>
+  api.post("/contact", payload).then((res) => res.data);
+
 // ---- Admin endpoints -------------------------------------------------------
 
 export const getStudents = (params) =>

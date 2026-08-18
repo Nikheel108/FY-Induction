@@ -1,16 +1,30 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { FaUserCircle, FaFileDownload, FaSignOutAlt, FaIdCard, FaCalendarAlt, FaCheckCircle, FaClock, FaMapMarkerAlt, FaUserTie } from "react-icons/fa";
+import {
+  FaUserCircle,
+  FaFileDownload,
+  FaSignOutAlt,
+  FaIdCard,
+  FaCalendarAlt,
+  FaCheckCircle,
+  FaClock,
+  FaMapMarkerAlt,
+  FaUserTie,
+  FaFilter
+} from "react-icons/fa";
 import { useToast } from "../context/ToastContext";
 import { getSchedule } from "../services/studentAuthService";
 import { submitAttendance } from "../services/attendanceService";
+import { downloadReceipt } from "../services/studentService";
 
 export default function StudentDashboard() {
   const [student, setStudent] = useState(null);
   const [schedule, setSchedule] = useState([]);
   const [loadingSchedule, setLoadingSchedule] = useState(false);
   const [activeTab, setActiveTab] = useState("profile"); // 'profile' or 'schedule'
+  const [selectedScheduleDate, setSelectedScheduleDate] = useState("");
   const [markingAttendance, setMarkingAttendance] = useState(false);
+  const [downloadingReceipt, setDownloadingReceipt] = useState(false);
 
   const navigate = useNavigate();
   const toast = useToast();
@@ -47,14 +61,61 @@ export default function StudentDashboard() {
     try {
       const data = await getSchedule();
       if (data.success) {
-        setSchedule(data.schedule);
+        setSchedule(data.schedule || []);
       }
     } catch (error) {
-      toast.error("Failed to load schedule");
+      toast.error("Failed to load schedule.");
     } finally {
       setLoadingSchedule(false);
     }
   };
+
+  // Extract unique available dates (YYYY-MM-DD) from schedule
+  const availableDates = useMemo(() => {
+    const map = {};
+    schedule.forEach((s) => {
+      if (!s.start_time) return;
+      const d = new Date(s.start_time);
+      if (isNaN(d.getTime())) return;
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      const label = d.toLocaleDateString(undefined, {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+      });
+      if (!map[key]) {
+        map[key] = { key, label, count: 0 };
+      }
+      map[key].count += 1;
+    });
+    return Object.values(map).sort((a, b) => a.key.localeCompare(b.key));
+  }, [schedule]);
+
+  // Set default selected date to today or first available date
+  useEffect(() => {
+    if (availableDates.length > 0 && !selectedScheduleDate) {
+      const todayKey = new Date().toISOString().split('T')[0];
+      const hasToday = availableDates.some((d) => d.key === todayKey);
+      if (hasToday) {
+        setSelectedScheduleDate(todayKey);
+      } else {
+        setSelectedScheduleDate(availableDates[0].key);
+      }
+    }
+  }, [availableDates, selectedScheduleDate]);
+
+  // Filter schedule for the selected date only
+  const filteredSchedule = useMemo(() => {
+    if (!selectedScheduleDate) return schedule;
+    return schedule.filter((s) => {
+      if (!s.start_time) return false;
+      const d = new Date(s.start_time);
+      if (isNaN(d.getTime())) return false;
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      return key === selectedScheduleDate;
+    });
+  }, [schedule, selectedScheduleDate]);
 
   const handleLogout = () => {
     localStorage.removeItem("student_token");
@@ -63,10 +124,26 @@ export default function StudentDashboard() {
     navigate("/");
   };
 
-  const handleDownloadReceipt = () => {
+  const handleDownloadReceipt = async () => {
     if (!student) return;
-    const url = `/api/student/${student.id}/receipt`;
-    window.open(url, '_blank');
+    setDownloadingReceipt(true);
+    try {
+      toast.info("Generating your receipt PDF...");
+      const blob = await downloadReceipt(student.id);
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = `Receipt_${student.registration_id || student.prn}.pdf`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+      toast.success("Receipt downloaded successfully.");
+    } catch (error) {
+      toast.error(error.message || "Failed to download receipt.");
+    } finally {
+      setDownloadingReceipt(false);
+    }
   };
 
   const handleMarkAttendance = async (session) => {
@@ -86,16 +163,6 @@ export default function StudentDashboard() {
 
   if (!student) return null;
 
-  // Group schedule by date
-  const groupedSchedule = schedule.reduce((acc, session) => {
-    const date = new Date(session.start_time).toLocaleDateString(undefined, {
-      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-    });
-    if (!acc[date]) acc[date] = [];
-    acc[date].push(session);
-    return acc;
-  }, {});
-
   const isSessionActive = (session) => {
     const now = new Date();
     const start = new Date(session.start_time);
@@ -103,13 +170,15 @@ export default function StudentDashboard() {
     return now >= start && now <= end;
   };
 
+  const selectedDateObj = availableDates.find(d => d.key === selectedScheduleDate);
+
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Navbar */}
       <nav className="bg-white shadow-sm border-b border-slate-200 px-4 py-3 sticky top-0 z-10 flex justify-between items-center">
         <div className="flex items-center gap-2 text-primary-700 font-bold text-lg">
           <FaUserCircle className="text-2xl" />
-          Student Portal
+          <span>{student.full_name || "Student Portal"}</span>
         </div>
         <button onClick={handleLogout} className="text-slate-500 hover:text-red-500 flex items-center gap-1 text-sm font-medium transition-colors">
           <FaSignOutAlt /> <span className="hidden sm:inline">Logout</span>
@@ -125,8 +194,12 @@ export default function StudentDashboard() {
               Manage your induction journey, mark your attendance, and access important resources from your portal.
             </p>
             <div className="flex flex-wrap gap-3">
-              <button onClick={handleDownloadReceipt} className="bg-white text-primary-700 hover:bg-slate-50 font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-all shadow-sm">
-                <FaFileDownload /> Download Receipt
+              <button
+                onClick={handleDownloadReceipt}
+                disabled={downloadingReceipt}
+                className="bg-white text-primary-700 hover:bg-slate-50 font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition-all shadow-sm"
+              >
+                <FaFileDownload /> {downloadingReceipt ? "Downloading..." : "Download Receipt"}
               </button>
             </div>
           </div>
@@ -201,81 +274,116 @@ export default function StudentDashboard() {
 
         {/* Tab Content: Schedule */}
         {activeTab === "schedule" && (
-          <div className="space-y-8 animate-fade-in">
+          <div className="space-y-6 animate-fade-in">
+            {/* Date Selection Bar with Calendar Icon */}
+            {availableDates.length > 0 && (
+              <div className="card p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-l-4 border-l-primary-600">
+                <div className="flex items-center gap-2 text-slate-800 font-bold text-sm">
+                  <FaCalendarAlt className="text-primary-600 text-base" />
+                  <span>Select Date:</span>
+                </div>
+
+                <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
+                  {availableDates.map((item) => (
+                    <button
+                      key={item.key}
+                      type="button"
+                      onClick={() => setSelectedScheduleDate(item.key)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+                        selectedScheduleDate === item.key
+                          ? "bg-primary-600 text-white shadow-sm ring-2 ring-primary-300"
+                          : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                      }`}
+                    >
+                      <FaCalendarAlt className="text-[10px]" />
+                      {item.label} ({item.count})
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {loadingSchedule ? (
               <div className="flex justify-center py-10">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
               </div>
-            ) : schedule.length === 0 ? (
+            ) : filteredSchedule.length === 0 ? (
               <div className="text-center py-10 bg-white rounded-xl border border-slate-200">
                 <FaCalendarAlt className="mx-auto text-4xl text-slate-300 mb-3" />
-                <p className="text-slate-500 font-medium">No sessions scheduled yet.</p>
+                <p className="text-slate-500 font-medium">No sessions scheduled for this date.</p>
               </div>
             ) : (
-              Object.entries(groupedSchedule).map(([date, sessions]) => (
-                <div key={date} className="space-y-4">
-                  <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2 border-b border-slate-200 pb-2">
-                    <FaCalendarAlt className="text-primary-600" /> {date}
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {sessions.map((session) => {
-                      const active = isSessionActive(session);
-                      const start = new Date(session.start_time);
-                      const end = new Date(start.getTime() + session.duration_minutes * 60000);
-                      
-                      const timeStr = `${start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+              <div className="space-y-4">
+                <h3 className="text-base font-bold text-slate-800 flex items-center gap-2 border-b border-slate-200 pb-2">
+                  <FaCalendarAlt className="text-primary-600" />
+                  Sessions for {selectedDateObj?.label || selectedScheduleDate}
+                </h3>
 
-                      return (
-                        <div key={session.id} className={`bg-white border rounded-xl p-5 shadow-sm transition-all relative overflow-hidden ${active ? 'border-primary-500 shadow-md ring-1 ring-primary-500' : 'border-slate-200 hover:border-slate-300 hover:shadow-md'}`}>
-                          {active && (
-                            <div className="absolute top-0 left-0 w-1 h-full bg-primary-500"></div>
-                          )}
-                          <div className="flex justify-between items-start mb-3">
-                            <h4 className="font-bold text-slate-800 text-lg leading-tight pr-4">{session.title}</h4>
-                            {active && (
-                              <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1 whitespace-nowrap">
-                                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span> Active
-                              </span>
-                            )}
-                          </div>
-                          
-                          <div className="flex items-center gap-2 text-slate-500 text-sm mb-2 font-medium">
-                            <FaClock className="text-slate-400" />
-                            {timeStr}
-                          </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {filteredSchedule.map((session) => {
+                    const active = isSessionActive(session);
+                    const start = new Date(session.start_time);
+                    const end = new Date(start.getTime() + session.duration_minutes * 60000);
+                    
+                    const timeStr = `${start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
 
-                          {(session.resource_speaker !== "-" || session.location !== "-") && (
-                            <div className="text-sm text-slate-600 mb-5 bg-slate-50 rounded-lg p-3 border border-slate-100 space-y-2">
-                              {session.resource_speaker !== "-" && (
-                                <div className="flex items-start gap-2.5">
-                                  <FaUserTie className="text-primary-500 mt-0.5" title="Resource Speaker" />
-                                  <span className="font-medium text-slate-700">{session.resource_speaker}</span>
-                                </div>
-                              )}
-                              {session.location !== "-" && (
-                                <div className="flex items-start gap-2.5">
-                                  <FaMapMarkerAlt className="text-primary-500 mt-0.5" title="Location" />
-                                  <span className="font-medium text-slate-700">{session.location}</span>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                          
+                    return (
+                      <div
+                        key={session.id}
+                        className={`bg-white border rounded-xl p-5 shadow-sm transition-all relative overflow-hidden ${
+                          active
+                            ? 'border-primary-500 shadow-md ring-1 ring-primary-500'
+                            : 'border-slate-200 hover:border-slate-300 hover:shadow-md'
+                        }`}
+                      >
+                        {active && (
+                          <div className="absolute top-0 left-0 w-1 h-full bg-primary-500"></div>
+                        )}
+                        <div className="flex justify-between items-start mb-3">
+                          <h4 className="font-bold text-slate-800 text-lg leading-tight pr-4">{session.title}</h4>
                           {active && (
-                            <button
-                              onClick={() => handleMarkAttendance(session)}
-                              disabled={markingAttendance}
-                              className="w-full btn-primary !py-2.5 justify-center"
-                            >
-                              {markingAttendance ? "Recording..." : <><FaCheckCircle className="mr-2" /> Mark Attendance</>}
-                            </button>
+                            <span className="bg-green-100 text-green-700 text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1 whitespace-nowrap">
+                              <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span> Active
+                            </span>
                           )}
                         </div>
-                      );
-                    })}
-                  </div>
+                        
+                        <div className="flex items-center gap-2 text-slate-500 text-sm mb-2 font-medium">
+                          <FaClock className="text-slate-400" />
+                          {timeStr}
+                        </div>
+
+                        {(session.resource_speaker !== "-" || session.location !== "-") && (
+                          <div className="text-sm text-slate-600 mb-5 bg-slate-50 rounded-lg p-3 border border-slate-100 space-y-2">
+                            {session.resource_speaker !== "-" && (
+                              <div className="flex items-start gap-2.5">
+                                <FaUserTie className="text-primary-500 mt-0.5" title="Resource Speaker" />
+                                <span className="font-medium text-slate-700">{session.resource_speaker}</span>
+                              </div>
+                            )}
+                            {session.location !== "-" && (
+                              <div className="flex items-start gap-2.5">
+                                <FaMapMarkerAlt className="text-primary-500 mt-0.5" title="Location" />
+                                <span className="font-medium text-slate-700">{session.location}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        
+                        {active && (
+                          <button
+                            onClick={() => handleMarkAttendance(session)}
+                            disabled={markingAttendance}
+                            className="w-full btn-primary !py-2.5 justify-center"
+                          >
+                            {markingAttendance ? "Recording..." : <><FaCheckCircle className="mr-2" /> Mark Attendance</>}
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
-              ))
+              </div>
             )}
           </div>
         )}
