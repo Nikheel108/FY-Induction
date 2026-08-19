@@ -284,27 +284,15 @@ def _send_via_gas(recipient, subject, html_body, attachments=None):
 def _send_email_dispatch(recipient, subject, html_body, attachments=None, raw_password=None):
     """
     Primary email dispatcher:
-    1. Tries SMTP first if EMAIL_ADDRESS and EMAIL_PASSWORD exist.
-    2. Falls back to Google Apps Script (GAS) if SMTP fails or is omitted.
+    Forces the use of Google Apps Script (GAS) as requested.
     """
-    email_address = os.getenv("EMAIL_ADDRESS") or current_app.config.get("EMAIL_ADDRESS")
-    email_password = os.getenv("EMAIL_PASSWORD") or current_app.config.get("EMAIL_PASSWORD")
-
-    if email_address and email_password:
-        try:
-            _send_via_smtp(recipient, subject, html_body, attachments)
-            return
-        except Exception as smtp_err:
-            logger.warning("SMTP dispatch to %s failed: %s. Falling back to GAS...", recipient, smtp_err)
-
-    # Fallback to Google Apps Script
     _send_via_gas(recipient, subject, html_body, attachments)
 
 
 def send_registration_emails(student, raw_password=None):
     """Send student and parent emails via SMTP / GAS and log results."""
     results = {}
-    attachments = _get_base64_attachments(student)
+    attachments = []
 
     # --- Welcome email to the student -----------------------------------------
     try:
@@ -388,19 +376,7 @@ def send_broadcast_emails(app, payload):
     Needs the Flask app context passed in to query DB and access configs.
     """
     with app.app_context():
-        # Get all static attachments (Schedule, etc.)
         attachments = []
-        for filename, display_name in app.config["EMAIL_ATTACHMENTS"]:
-            path = _resolve_attachment(filename)
-            if path:
-                with open(path, "rb") as fh:
-                    b64_data = base64.b64encode(fh.read()).decode("utf-8")
-                    attachments.append({
-                        "name": display_name,
-                        "mimeType": "application/pdf",
-                        "data": b64_data
-                    })
-        
         subject = payload.get("subject", "Important Update from MITAOE")
         recipient_type = payload.get("recipient_type", "students")
         

@@ -80,6 +80,26 @@ def create_app(config_class=Config):
                 db.session.commit()
             except Exception:
                 db.session.rollback()
+                
+            # Auto-migrate event_sessions table
+            try:
+                db.session.execute(text("ALTER TABLE event_sessions ADD COLUMN resource_speaker VARCHAR(150);"))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+                
+            try:
+                db.session.execute(text("ALTER TABLE event_sessions ADD COLUMN location VARCHAR(150);"))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+                
+            # Auto-migrate highlights table
+            try:
+                db.session.execute(text("ALTER TABLE highlights ADD COLUMN resource_speaker VARCHAR(150);"))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
 
             logger.info("Database tables ensured (db=%s).", app.config["DB_NAME"])
         except Exception as exc:  # noqa: BLE001 - startup must not crash the API
