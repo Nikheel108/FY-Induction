@@ -135,6 +135,25 @@ def upload_prns():
         "added": added
     })
 
+@admin_bp.route("/student/<int:student_id>/reset-password", methods=["POST"])
+@admin_required
+def reset_student_password(student_id):
+    student = Student.query.get(student_id)
+    if not student:
+        return jsonify({"success": False, "message": "Student not found."}), 404
+
+    data = request.get_json() or {}
+    new_password = data.get("new_password")
+    
+    if not new_password:
+        return jsonify({"success": False, "message": "New password is required."}), 400
+
+    student.set_password(new_password)
+    student.is_first_login = True
+    db.session.commit()
+    
+    return jsonify({"success": True, "message": "Password reset successfully."})
+
 @admin_bp.route("/valid-prns", methods=["GET"])
 @admin_required
 def list_valid_prns():

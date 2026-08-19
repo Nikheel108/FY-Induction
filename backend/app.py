@@ -101,6 +101,19 @@ def create_app(config_class=Config):
             except Exception:
                 db.session.rollback()
 
+            # Auto-migrate students table
+            try:
+                db.session.execute(text("ALTER TABLE students ADD COLUMN password_hash VARCHAR(255);"))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+
+            try:
+                db.session.execute(text("ALTER TABLE students ADD COLUMN is_first_login BOOLEAN NOT NULL DEFAULT TRUE;"))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+
             logger.info("Database tables ensured (db=%s).", app.config["DB_NAME"])
         except Exception as exc:  # noqa: BLE001 - startup must not crash the API
             logger.error("Could not create the tables: %s", exc)
