@@ -17,32 +17,32 @@ from services.utils import build_receipt_pdf
 logger = logging.getLogger(__name__)
 
 
-def _resolve_attachment(filename):
-    """Return absolute path of `filename` inside uploads, or None if missing."""
-    upload_folder = current_app.config["UPLOAD_FOLDER"]
-    path = os.path.join(upload_folder, filename)
-    return path if os.path.isfile(path) else None
+# def _resolve_attachment(filename):
+#     """Return absolute path of `filename` inside uploads, or None if missing."""
+#     upload_folder = current_app.config["UPLOAD_FOLDER"]
+#     path = os.path.join(upload_folder, filename)
+#     return path if os.path.isfile(path) else None
 
 
-def _get_base64_attachments(student):
-    """Read static PDFs and base64-encode them for the JSON/SMTP payload."""
-    attachments = []
+# def _get_base64_attachments(student):
+#     """Read static PDFs and base64-encode them for the JSON/SMTP payload."""
+#     attachments = []
     
-    # Static uploads (Schedule, Campus Map, etc.)
-    for filename, display_name in current_app.config["EMAIL_ATTACHMENTS"]:
-        path = _resolve_attachment(filename)
-        if path:
-            with open(path, "rb") as fh:
-                b64_data = base64.b64encode(fh.read()).decode("utf-8")
-                attachments.append({
-                    "name": display_name,
-                    "mimeType": "application/pdf",
-                    "data": b64_data
-                })
-        else:
-            logger.warning("Attachment not found on disk: %s", filename)
+#     # Static uploads (Schedule, Campus Map, etc.)
+#     for filename, display_name in current_app.config["EMAIL_ATTACHMENTS"]:
+#         path = _resolve_attachment(filename)
+#         if path:
+#             with open(path, "rb") as fh:
+#                 b64_data = base64.b64encode(fh.read()).decode("utf-8")
+#                 attachments.append({
+#                     "name": display_name,
+#                     "mimeType": "application/pdf",
+#                     "data": b64_data
+#                 })
+#         else:
+#             logger.warning("Attachment not found on disk: %s", filename)
             
-    return attachments
+#     return attachments
 
 
 def _record_log(student_id, mail_type, status, error_message=None):

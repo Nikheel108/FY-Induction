@@ -48,9 +48,9 @@ export default function Navbar() {
         {/* Desktop Nav */}
         {!isRegisterPage && (
           <nav className="hidden sm:flex items-center gap-4">
-            <Link to="/attendance" className="text-sm font-semibold text-slate-600 hover:text-primary-600 transition-colors">
+            {/* <Link to="/attendance" className="text-sm font-semibold text-slate-600 hover:text-primary-600 transition-colors">
               Attendance
-            </Link>
+            </Link> */}
             <Link to="/contact" className="text-sm font-semibold text-slate-600 hover:text-primary-600 transition-colors">
               Contact Us
             </Link>
