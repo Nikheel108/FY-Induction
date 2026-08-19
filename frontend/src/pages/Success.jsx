@@ -142,6 +142,8 @@ export default function Success() {
                 </p>
                 <p className="leading-relaxed">
                   Your login password <strong>Pass26</strong> will be delivered to <strong>{student.student_email}</strong> in approximately 1 minute.
+                  <br /><br />
+                  <span className="font-semibold">Note:</span> If the email is not visible in your inbox, please check your spam or junk folder.
                 </p>
               </div>
 

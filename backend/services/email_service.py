@@ -58,25 +58,9 @@ def _record_log(student_id, mail_type, status, error_message=None):
     db.session.commit()
 
 
-def _build_student_html(student, raw_password=None):
+def _build_student_html(student):
     photo_html = f'<img src="{student.photo_base64}" style="width: 100px; height: 100px; object-fit: cover; border-radius: 8px; float: right; border: 1px solid #e2e8f0; margin-left: 16px; margin-bottom: 16px;" alt="Student Photo"/>' if getattr(student, 'photo_base64', None) else ''
     logo_url = "https://fy-induction.vercel.app/logo.png"
-    
-    cred_box = f"""
-          <div style="background: #f0fdf4; border-radius: 8px; padding: 20px; margin: 24px 0; border: 1px solid #bbf7d0; border-left: 4px solid #16a34a;">
-            <h3 style="margin: 0 0 12px 0; color: #15803d; font-size: 16px;">🔑 Your Student Portal Login Credentials</h3>
-            <table style="width: 100%; border-collapse: collapse; font-size: 15px;">
-              <tr>
-                <td style="padding: 6px 0; color: #475569; width: 45%;"><strong>User ID (PRN):</strong></td>
-                <td style="padding: 6px 0; font-weight: 700; color: #0f172a; font-family: monospace; font-size: 16px;">{student.prn}</td>
-              </tr>
-              {f'<tr style="border-top: 1px solid #dcfce7;"><td style="padding: 6px 0; color: #475569;"><strong>Password:</strong></td><td style="padding: 6px 0; font-weight: 700; color: #15803d; font-family: monospace; font-size: 16px;">{raw_password}</td></tr>' if raw_password else ''}
-            </table>
-            <p style="margin: 12px 0 0 0; font-size: 13px; color: #166534;">
-              Log in to your <a href="https://fy-induction.vercel.app/student-login" style="color: #15803d; font-weight: bold; text-decoration: underline;">Student Portal</a> using these credentials.
-            </p>
-          </div>
-    """
 
     return f"""
     <div style="font-family: 'Segoe UI', Inter, Arial, sans-serif; color: #334155; background-color: #f8fafc; padding: 30px 15px; margin: 0;">
@@ -94,8 +78,6 @@ def _build_student_html(student, raw_password=None):
           <p style="font-size: 16px; margin-top: 0;">Dear <strong>{student.full_name}</strong>,</p>
           <p style="font-size: 16px; color: #475569;">Congratulations on your admission! Your registration for the <strong>First Year Induction Program</strong> has been successfully completed.</p>
           
-          {cred_box}
-
           <div style="background: #f1f5f9; border-radius: 8px; padding: 20px; margin: 24px 0; border: 1px solid #e2e8f0; clear: both;">
             <table style="width: 100%; border-collapse: collapse; font-size: 15px;">
               <tr><td style="padding: 8px 0; color: #64748b; width: 40%;"><strong>PRN Number</strong></td>
@@ -111,16 +93,56 @@ def _build_student_html(student, raw_password=None):
             </table>
           </div>
 
-          <p style="font-size: 16px; color: #475569;">Please find the following documents attached with this email:</p>
-          <ul style="color: #475569; padding-left: 20px;">
-            <li>Day-wise Schedule</li>
-            <li>Campus Map</li>
-            <li>Student Handbook</li>
-            <li>Academic Calendar</li>
-          </ul>
-
           <div style="margin-top: 24px; padding: 16px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 4px;">
             <p style="margin: 0; color: #1e3a8a; font-size: 15px;">Your Registration ID is <strong>{student.registration_id}</strong>. Kindly bring a printed copy of your receipt on the reporting day.</p>
+          </div>
+
+          <p style="margin-top: 32px; font-size: 15px; color: #475569;">Warm Regards,<br/>
+          <strong style="color: #0f172a;">First Year Induction Team</strong><br/>
+          MIT Academy of Engineering</p>
+        </div>
+        
+        <!-- Footer -->
+        <div style="background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 20px; text-align: center;">
+          <p style="margin: 0; font-size: 13px; color: #94a3b8;">This is an automated message. Please do not reply to this email.</p>
+        </div>
+
+      </div>
+    </div>
+    """
+
+def _build_credentials_html(student, raw_password):
+    logo_url = "https://fy-induction.vercel.app/logo.png"
+    return f"""
+    <div style="font-family: 'Segoe UI', Inter, Arial, sans-serif; color: #334155; background-color: #f8fafc; padding: 30px 15px; margin: 0;">
+      <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);">
+        
+        <!-- Header -->
+        <div style="background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); padding: 24px 32px; text-align: center;">
+          <img src="{logo_url}" alt="MITAOE Logo" style="height: 60px; margin-bottom: 16px; filter: brightness(0) invert(1);" />
+          <h2 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 700; letter-spacing: -0.5px;">Your Student Portal Credentials</h2>
+        </div>
+
+        <!-- Body -->
+        <div style="padding: 32px; line-height: 1.6;">
+          <p style="font-size: 16px; margin-top: 0;">Dear <strong>{student.full_name}</strong>,</p>
+          <p style="font-size: 16px; color: #475569;">As part of your First Year Induction registration, we have generated your login credentials for the Student Portal. Please keep these secure.</p>
+          
+          <div style="background: #f0fdf4; border-radius: 8px; padding: 20px; margin: 24px 0; border: 1px solid #bbf7d0; border-left: 4px solid #16a34a;">
+            <h3 style="margin: 0 0 12px 0; color: #15803d; font-size: 16px;">🔑 Login Credentials</h3>
+            <table style="width: 100%; border-collapse: collapse; font-size: 15px;">
+              <tr>
+                <td style="padding: 6px 0; color: #475569; width: 45%;"><strong>User ID (PRN):</strong></td>
+                <td style="padding: 6px 0; font-weight: 700; color: #0f172a; font-family: monospace; font-size: 16px;">{student.prn}</td>
+              </tr>
+              <tr style="border-top: 1px solid #dcfce7;">
+                <td style="padding: 6px 0; color: #475569;"><strong>Password:</strong></td>
+                <td style="padding: 6px 0; font-weight: 700; color: #15803d; font-family: monospace; font-size: 16px;">{raw_password}</td>
+              </tr>
+            </table>
+            <p style="margin: 16px 0 0 0; font-size: 14px; color: #166534;">
+              <a href="https://fy-induction.vercel.app/student-login" style="display: inline-block; background-color: #16a34a; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-weight: bold;">Login to Student Portal</a>
+            </p>
           </div>
 
           <p style="margin-top: 32px; font-size: 15px; color: #475569;">Warm Regards,<br/>
@@ -289,8 +311,8 @@ def _send_email_dispatch(recipient, subject, html_body, attachments=None, raw_pa
     _send_via_gas(recipient, subject, html_body, attachments)
 
 
-def send_registration_emails(student, raw_password=None):
-    """Send student and parent emails via SMTP / GAS and log results."""
+def send_registration_emails(student):
+    """Send student and parent welcome emails via SMTP / GAS and log results."""
     results = {}
     attachments = []
 
@@ -299,7 +321,7 @@ def send_registration_emails(student, raw_password=None):
         _send_email_dispatch(
             recipient=student.student_email,
             subject="Welcome to MIT Academy of Engineering",
-            html_body=_build_student_html(student, raw_password),
+            html_body=_build_student_html(student),
             attachments=attachments
         )
         _record_log(student.id, "welcome", "sent")
@@ -313,6 +335,24 @@ def send_registration_emails(student, raw_password=None):
         results["student"] = {"status": "failed", "error": str(exc)}
 
     return results
+
+
+def send_credentials_email(student, raw_password):
+    """Send separate email with student credentials via SMTP / GAS."""
+    try:
+        _send_email_dispatch(
+            recipient=student.student_email,
+            subject="Your Student Portal Login Credentials",
+            html_body=_build_credentials_html(student, raw_password),
+            attachments=[]
+        )
+        _record_log(student.id, "credentials", "sent")
+    except Exception as exc:
+        logger.exception("Failed to send credentials email for student %s", student.id)
+        try:
+            _record_log(student.id, "credentials", "failed", str(exc))
+        except Exception:
+            pass
 
 
 def _build_broadcast_html(payload, greeting):
