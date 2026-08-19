@@ -265,6 +265,29 @@ def build_receipt_pdf(student):
         pdf.setFillColor(dark)
         pdf.drawString(60 * mm, y, str(value))
         y -= 6 * mm
+        
+    y -= 6 * mm
+    pdf.setFillColor(colors.HexColor("#16a34a")) # Green color for credentials
+    pdf.setFont("Helvetica-Bold", 12)
+    pdf.drawString(margin, y, "Login Credentials (Student Portal)")
+    y -= 7 * mm
+
+    # We fetch the default password
+    from services.password_service import TEST_DEFAULT_PASSWORD
+    
+    cred_rows = [
+        ("User ID (PRN)", student.prn),
+        ("Password", TEST_DEFAULT_PASSWORD),
+    ]
+    pdf.setFont("Helvetica", 9.5)
+    for label, value in cred_rows:
+        pdf.setFillColor(colors.HexColor("#64748b"))
+        pdf.drawString(margin, y, f"{label.upper()}")
+        pdf.setFillColor(colors.HexColor("#15803d")) # Darker green text
+        pdf.setFont("Courier-Bold", 11)
+        pdf.drawString(60 * mm, y, str(value))
+        pdf.setFont("Helvetica", 9.5)
+        y -= 6 * mm
 
     # --- Footer -----------------------------------------------------------------
     pdf.setStrokeColor(colors.HexColor("#cbd5e1"))

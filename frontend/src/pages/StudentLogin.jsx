@@ -210,7 +210,7 @@ export default function StudentLogin() {
                     autoComplete="current-password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter password (e.g. Pass26)"
+                    placeholder="Enter password"
                     className="input-field pl-9"
                     required
                   />
