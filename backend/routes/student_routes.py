@@ -13,7 +13,7 @@ from io import BytesIO
 from models import MailLog, Student, EventSession, ContactQuery
 from services import utils
 from services.database import db
-from services.email_service import send_registration_emails, send_credentials_email
+from services.email_service import send_registration_emails
 from services.utils import admin_required, student_required, generate_student_token
 
 student_bp = Blueprint("student", __name__, url_prefix="/api")
@@ -308,28 +308,21 @@ def register_student():
             "errors": [str(exc)],
         }), 500
 
-    # Send welcome email immediately
-    try:
-        send_registration_emails(student)
-    except Exception as exc:
-        logger.exception("Failed to send immediate welcome email: %s", exc)
-
-    # Schedule sending credentials email after 1 minute (60 seconds) in background thread
+    # Send welcome email asynchronously to prevent blocking response
     app_obj = current_app._get_current_object()
     student_id = student.id
     pwd_val = raw_password
 
-    def _delayed_credentials_email_job():
-        time.sleep(60)  # Wait 1 minute
+    def _async_email_job():
         with app_obj.app_context():
             try:
                 s = db.session.get(Student, student_id)
                 if s:
-                    send_credentials_email(s, pwd_val)
+                    send_registration_emails(s, raw_password=pwd_val)
             except Exception as e:
-                logger.exception("Error sending 1-minute delayed credentials email: %s", e)
+                logger.exception("Error sending registration email asynchronously: %s", e)
 
-    email_thread = threading.Thread(target=_delayed_credentials_email_job)
+    email_thread = threading.Thread(target=_async_email_job)
     email_thread.daemon = True
     email_thread.start()
 

@@ -141,7 +141,7 @@ export default function Success() {
                   <FaEnvelope className="text-amber-600" /> Portal Login Credentials Notice
                 </p>
                 <p className="leading-relaxed">
-                  Your login credentials have been included in your <strong>Registration Receipt</strong> (download above). A copy will also be delivered to <strong>{student.student_email}</strong> in approximately 1 minute.
+                  Your login credentials have been included in your <strong>Registration Receipt</strong> (download above) and will also be delivered to <strong>{student.student_email}</strong> in your Welcome Email.
                   <br /><br />
                   <span className="font-semibold">Note:</span> If the email is not visible in your inbox, please check your spam or junk folder.
                 </p>

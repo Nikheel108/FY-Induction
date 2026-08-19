@@ -178,7 +178,7 @@ export default function Home() {
           <div className="flex items-center gap-4">
             <FaUsers className="text-4xl text-white/80" />
             <div>
-              <h3 className="text-xl font-bold text-white">Ready to join the family?</h3>
+              <h3 className="text-xl font-bold text-white">Ready to join the MITAOE?</h3>
               <p className="text-sm text-primary-100">
                 Complete your registration and receive instant email confirmation.
               </p>

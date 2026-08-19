@@ -65,6 +65,79 @@ def delete_highlight(highlight_id):
 
     return jsonify({"success": True, "message": "Highlight deleted successfully."})
 
+from reportlab.lib.utils import ImageReader
+from reportlab.platypus import Table, TableStyle
+from datetime import datetime
+
+def _on_page(canvas, doc):
+    canvas.saveState()
+    
+    # Use A4 size which is standard
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.units import mm
+    width, height = A4
+    margin = 15 * mm
+    
+    # Draw proper box border for each page
+    canvas.setStrokeColor(colors.HexColor("#334155"))
+    canvas.setLineWidth(1)
+    canvas.rect(margin, margin, width - 2*margin, height - 2*margin)
+    
+    # --- Header ---
+    import os, requests
+    
+    # Try fetching the logo from local frontend if exists, otherwise URL
+    logo_path = None
+    local_logo = os.path.join(os.path.dirname(__file__), "..", "..", "frontend", "public", "logo.png")
+    if os.path.exists(local_logo):
+        logo_path = local_logo
+    else:
+        try:
+            r = requests.get("https://fy-induction.vercel.app/logo.png")
+            if r.status_code == 200:
+                from io import BytesIO
+                logo_path = BytesIO(r.content)
+        except:
+            pass
+    
+    if logo_path:
+        try:
+            img = ImageReader(logo_path)
+            # Draw on left side
+            canvas.drawImage(img, margin + 5*mm, height - margin - 22*mm, width=20*mm, height=20*mm, preserveAspectRatio=True)
+        except Exception as e:
+            logger.error(f"Error drawing logo: {e}")
+            
+    # College Name & Address under it (Left Side, next to logo)
+    canvas.setFont("Helvetica-Bold", 14)
+    canvas.drawString(margin + 30*mm, height - margin - 10*mm, "MIT Academy of Engineering")
+    canvas.setFont("Helvetica", 10)
+    canvas.drawString(margin + 30*mm, height - margin - 15*mm, "Alandi, Pune, Maharashtra 412105")
+    
+    # Date & Time top right
+    now_str = datetime.now().strftime("%d %b %Y, %H:%M")
+    canvas.setFont("Helvetica", 9)
+    canvas.drawRightString(width - margin - 5*mm, height - margin - 10*mm, f"Generated: {now_str}")
+    
+    # Line under header info
+    canvas.line(margin, height - margin - 25*mm, width - margin, height - margin - 25*mm)
+    
+    # Heading in center
+    canvas.setFont("Helvetica-Bold", 16)
+    canvas.setFillColor(colors.HexColor("#1e3a8a"))
+    canvas.drawCentredString(width / 2.0, height - margin - 35*mm, "Student Induction program (CSE AI&ML) 2026-27")
+    
+    # --- Footer ---
+    canvas.line(margin, margin + 15*mm, width - margin, margin + 15*mm)
+    canvas.setFont("Helvetica-Bold", 10)
+    canvas.setFillColor(colors.HexColor("#0f172a"))
+    canvas.drawCentredString(width / 2.0, margin + 7*mm, "MIT Academy of Engineering")
+    canvas.setFont("Helvetica", 9)
+    canvas.drawRightString(width - margin - 5*mm, margin + 7*mm, f"Page {doc.page}")
+    
+    canvas.restoreState()
+
+
 @highlights_bp.route("/admin/highlights/export/pdf", methods=["GET"])
 @admin_required
 def export_highlights_pdf():
@@ -86,44 +159,43 @@ def export_highlights_pdf():
         grouped[speaker].append(h)
         
     buffer = BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=40, leftMargin=40, topMargin=40, bottomMargin=40)
+    
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.units import mm
+    
+    margin = 15 * mm
+    doc = SimpleDocTemplate(
+        buffer, 
+        pagesize=A4, 
+        rightMargin=margin + 5*mm, 
+        leftMargin=margin + 5*mm, 
+        topMargin=margin + 45*mm,  # Leave space for header
+        bottomMargin=margin + 20*mm # Leave space for footer
+    )
+    
     styles = getSampleStyleSheet()
     
-    # Custom Styles
-    title_style = styles['Heading1']
-    title_style.alignment = 1 # Center
-    
     speaker_style = styles['Heading2']
-    speaker_style.textColor = colors.HexColor("#0f172a")
-    speaker_style.spaceBefore = 20
-    speaker_style.spaceAfter = 10
-    
-    event_title_style = styles['Heading3']
-    event_title_style.textColor = colors.HexColor("#334155")
+    speaker_style.textColor = colors.HexColor("#1e293b")
+    speaker_style.spaceBefore = 10
+    speaker_style.spaceAfter = 15
     
     desc_style = styles['Normal']
-    desc_style.spaceAfter = 10
+    desc_style.leading = 14
     
     elements = []
-    
-    # Title
-    elements.append(Paragraph("Student Induction Program - Activities Report", title_style))
-    elements.append(Spacer(1, 0.25 * inch))
     
     if not grouped:
         elements.append(Paragraph("No activities recorded yet.", desc_style))
     
     for speaker, items in grouped.items():
-        elements.append(Paragraph(f"Resource Speaker: {speaker}", speaker_style))
+        elements.append(Paragraph(f"<b>Resource Speaker:</b> {speaker}", speaker_style))
         
         for item in items:
-            elements.append(Paragraph(item.title, event_title_style))
-            elements.append(Paragraph(item.description, desc_style))
-            
+            img = Paragraph("[Image unavailable]", desc_style)
             # Handle image
             if item.image_base64:
                 try:
-                    # image_base64 usually looks like "data:image/jpeg;base64,/9j/4AAQSkZJRg..."
                     img_data = item.image_base64
                     if "," in img_data:
                         img_data = img_data.split(",")[1]
@@ -132,32 +204,33 @@ def export_highlights_pdf():
                     img_buffer = BytesIO(img_bytes)
                     
                     img = RLImage(img_buffer)
-                    # Resize image while maintaining aspect ratio, max width 6 inches
-                    max_width = 6 * inch
-                    max_height = 4 * inch
-                    
-                    aspect = img.imageWidth / float(img.imageHeight)
-                    
-                    if img.imageWidth > max_width:
-                        img.drawWidth = max_width
-                        img.drawHeight = max_width / aspect
-                    else:
-                        img.drawWidth = img.imageWidth
-                        img.drawHeight = img.imageHeight
-                        
-                    if img.drawHeight > max_height:
-                        img.drawHeight = max_height
-                        img.drawWidth = max_height * aspect
-                        
-                    elements.append(img)
-                    elements.append(Spacer(1, 0.2 * inch))
+                    # Fixed width of 2.5 inches for the photo
+                    img_width = 2.5 * inch
+                    img.drawHeight = img_width * (img.imageHeight / img.imageWidth)
+                    img.drawWidth = img_width
                 except Exception as e:
                     logger.error(f"Failed to process image for highlight {item.id}: {e}")
-                    elements.append(Paragraph("[Image unavailable]", desc_style))
-                    
-            elements.append(Spacer(1, 0.3 * inch))
             
-    doc.build(elements)
+            # Form details section
+            details_text = f"""
+            <b>Event Name:</b> {item.title}<br/><br/>
+            <b>Topic:</b> {item.title} <br/><br/>
+            <b>Speaker:</b> {item.resource_speaker or '-'}<br/><br/>
+            <b>Description:</b> {item.description}
+            """
+            details = Paragraph(details_text, desc_style)
+            
+            # Side-by-side Table
+            t = Table([[img, details]], colWidths=[2.7 * inch, 4.3 * inch])
+            t.setStyle(TableStyle([
+                ('VALIGN', (0,0), (-1,-1), 'TOP'),
+                ('BOTTOMPADDING', (0,0), (-1,-1), 15),
+            ]))
+            
+            elements.append(t)
+            elements.append(Spacer(1, 15))
+            
+    doc.build(elements, onFirstPage=_on_page, onLaterPages=_on_page)
     
     buffer.seek(0)
     return send_file(
