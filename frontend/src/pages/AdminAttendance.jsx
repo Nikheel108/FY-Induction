@@ -1164,74 +1164,58 @@ export default function AdminAttendance() {
               <p className="text-xs text-slate-500 mt-0.5">
                 Session Start: <span className="font-semibold text-slate-700">{new Date(sessionData.session.start_time).toLocaleString()}</span>
               </p>
+              <p className="text-xs text-emerald-700 font-semibold mt-0.5">
+                Current Attendance Limit: <strong>{sessionData.session.attendance_limit_minutes || sessionData.session.duration_minutes || 15} Mins</strong>
+              </p>
             </div>
 
+            {/* Quick Increase Options (Popup Only) */}
             <div>
-              <label className="block text-sm font-semibold text-slate-700 mb-1">
-                Attendance System Active Limit (Minutes)
+              <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">
+                Quick Increase Limit
               </label>
-              <p className="text-xs text-slate-500 mb-2">
-                Set how long attendance stays open for students from start time (e.g. 10 mins, 15 mins).
-              </p>
-              <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => setEditLimitMinutes((prev) => Math.max(5, parseInt(prev || 0) - 10))}
-                  className="px-3 py-2 bg-rose-100 text-rose-800 hover:bg-rose-200 font-bold text-xs rounded-lg transition shrink-0"
-                >
-                  -10m
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setEditLimitMinutes((prev) => Math.max(5, parseInt(prev || 0) - 5))}
-                  className="px-3 py-2 bg-rose-100 text-rose-800 hover:bg-rose-200 font-bold text-xs rounded-lg transition shrink-0"
-                >
-                  -5m
-                </button>
-                <input
-                  type="number"
-                  min="5"
-                  value={editLimitMinutes}
-                  onChange={(e) => setEditLimitMinutes(e.target.value)}
-                  className="input-field text-center font-bold text-base !py-2 min-w-[70px]"
-                  required
-                />
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setEditLimitMinutes((prev) => parseInt(prev || 0) + 5)}
-                  className="px-3 py-2 bg-emerald-100 text-emerald-800 hover:bg-emerald-200 font-bold text-xs rounded-lg transition shrink-0"
+                  className="px-3 py-1.5 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 font-extrabold text-xs rounded-lg border border-emerald-300 shadow-sm transition"
                 >
-                  +5m
+                  +5 Mins
                 </button>
                 <button
                   type="button"
                   onClick={() => setEditLimitMinutes((prev) => parseInt(prev || 0) + 10)}
-                  className="px-3 py-2 bg-emerald-100 text-emerald-800 hover:bg-emerald-200 font-bold text-xs rounded-lg transition shrink-0"
+                  className="px-3 py-1.5 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 font-extrabold text-xs rounded-lg border border-emerald-300 shadow-sm transition"
                 >
-                  +10m
+                  +10 Mins
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditLimitMinutes((prev) => parseInt(prev || 0) + 15)}
+                  className="px-3 py-1.5 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 font-extrabold text-xs rounded-lg border border-emerald-300 shadow-sm transition"
+                >
+                  +15 Mins
                 </button>
               </div>
             </div>
 
-            {/* Quick Presets */}
+            {/* Custom Input Option */}
             <div>
-              <span className="text-xs font-semibold text-slate-500 block mb-1.5">Quick Presets:</span>
-              <div className="flex flex-wrap gap-2">
-                {[10, 15, 20, 30, 45, 60].map((mins) => (
-                  <button
-                    key={mins}
-                    type="button"
-                    onClick={() => setEditLimitMinutes(mins)}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold transition ${
-                      parseInt(editLimitMinutes) === mins
-                        ? "bg-primary-600 text-white shadow-sm"
-                        : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                    }`}
-                  >
-                    {mins} Mins
-                  </button>
-                ))}
-              </div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1">
+                Custom Attendance Limit (Minutes)
+              </label>
+              <p className="text-xs text-slate-500 mb-2">
+                Set or type any custom limit in minutes for active attendance:
+              </p>
+              <input
+                type="number"
+                min="1"
+                value={editLimitMinutes}
+                onChange={(e) => setEditLimitMinutes(e.target.value)}
+                className="input-field text-center font-bold text-lg !py-2.5"
+                placeholder="e.g. 10, 12, 18, 25..."
+                required
+              />
             </div>
 
             <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">

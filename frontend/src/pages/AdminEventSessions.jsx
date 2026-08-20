@@ -587,14 +587,48 @@ export default function AdminEventSessions() {
               <p className="text-xs text-slate-500 mt-0.5">
                 Session Total Duration: <span className="font-semibold text-slate-700">{timeLimitSession.duration_minutes || 60} mins</span>
               </p>
+              <p className="text-xs text-emerald-700 font-semibold mt-0.5">
+                Current Attendance Limit: <strong>{timeLimitSession.attendance_limit_minutes || 15} Mins</strong>
+              </p>
             </div>
 
+            {/* Quick Increase Options (Popup Only) */}
+            <div>
+              <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">
+                Quick Increase Limit
+              </label>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setTimeLimitMinutes((prev) => parseInt(prev || 0) + 5)}
+                  className="px-3 py-1.5 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 font-extrabold text-xs rounded-lg border border-emerald-300 shadow-sm transition"
+                >
+                  +5 Mins
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTimeLimitMinutes((prev) => parseInt(prev || 0) + 10)}
+                  className="px-3 py-1.5 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 font-extrabold text-xs rounded-lg border border-emerald-300 shadow-sm transition"
+                >
+                  +10 Mins
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTimeLimitMinutes((prev) => parseInt(prev || 0) + 15)}
+                  className="px-3 py-1.5 bg-emerald-50 text-emerald-800 hover:bg-emerald-100 font-extrabold text-xs rounded-lg border border-emerald-300 shadow-sm transition"
+                >
+                  +15 Mins
+                </button>
+              </div>
+            </div>
+
+            {/* Custom Input Option */}
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-1">
-                Attendance System Active Limit (Minutes)
+                Custom Attendance Limit (Minutes)
               </label>
               <p className="text-xs text-slate-500 mb-2">
-                Enter how many minutes from session start time the student attendance system will stay ON.
+                Set or type any custom limit in minutes for active attendance:
               </p>
               <input
                 type="number"
@@ -602,7 +636,7 @@ export default function AdminEventSessions() {
                 value={timeLimitMinutes}
                 onChange={(e) => setTimeLimitMinutes(e.target.value)}
                 className="input-field text-center font-bold text-lg !py-2.5"
-                placeholder="e.g. 10 or 15"
+                placeholder="e.g. 10, 12, 18, 25..."
                 required
               />
             </div>
