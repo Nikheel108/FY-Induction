@@ -574,7 +574,7 @@ export default function StudentDashboard() {
                   {/* Top Badge */}
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <span className="bg-amber-400 text-slate-950 font-black text-xs uppercase tracking-widest px-3 py-1 rounded-full shadow-md flex items-center gap-1.5">
-                      <FaGraduationCap className="text-sm" /> Student Induction 2026-27
+                      <FaGraduationCap className="text-sm" /> Student Induction Program 2026-27
                     </span>
                     <span className="text-xs text-slate-200 font-semibold bg-black/40 backdrop-blur-md px-3 py-1 rounded-full border border-white/20">
                       📍 {slide.location}
