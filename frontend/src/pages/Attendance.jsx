@@ -36,6 +36,7 @@ export default function Attendance() {
         const res = await getActiveSession();
         if (res.active_session) {
           setActiveSession(res.active_session);
+          setIsExpired(false);
         } else {
           setActiveSession(null);
           setIsExpired(true);
@@ -46,25 +47,31 @@ export default function Attendance() {
         setSessionLoading(false);
       }
     };
+
     fetchSession();
+    // Poll every 5 seconds so if admin extends time limit live, attendance re-opens automatically!
+    const pollInterval = setInterval(fetchSession, 5000);
+    return () => clearInterval(pollInterval);
   }, []);
 
   useEffect(() => {
     if (!activeSession) return;
 
-    // Calculate end time: start_time + duration + 5 mins grace period
+    // Calculate end time strictly based on attendance_limit_minutes + 5 mins grace period
     const startTime = new Date(activeSession.start_time).getTime();
-    const endTime = startTime + (activeSession.duration_minutes + 5) * 60000;
+    const attLimitMinutes = activeSession.attendance_limit_minutes ?? 15;
+    const endTime = startTime + (attLimitMinutes + 5) * 60000;
 
     const timer = setInterval(() => {
       const now = new Date().getTime();
       const distance = endTime - now;
 
-      if (distance < 0) {
+      if (distance <= 0) {
         clearInterval(timer);
         setTimeRemaining("00:00");
         setIsExpired(true);
       } else {
+        setIsExpired(false);
         const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
         const seconds = Math.floor((distance % (1000 * 60)) / 1000);
         setTimeRemaining(`${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`);

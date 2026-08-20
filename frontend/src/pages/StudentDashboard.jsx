@@ -118,6 +118,9 @@ export default function StudentDashboard() {
 
   useEffect(() => {
     fetchSchedule();
+    // Poll schedule every 5 seconds so live attendance limit extensions re-open marking immediately
+    const pollInterval = setInterval(fetchSchedule, 5000);
+    return () => clearInterval(pollInterval);
   }, []);
 
   // Auto slide carousel every 5 seconds
@@ -276,11 +279,30 @@ export default function StudentDashboard() {
 
   if (!student) return null;
 
-  const isSessionActive = (session) => {
+  const getAttendanceWindowDetails = (session) => {
+    if (!session || !session.start_time) return { active: false, remainingMins: 0, windowEndStr: '—', attLimit: 15 };
     const now = new Date();
     const start = new Date(session.start_time);
-    const end = new Date(start.getTime() + (session.duration_minutes + 5) * 60000);
-    return now >= start && now <= end;
+    const attLimit = session.attendance_limit_minutes ?? 15;
+    const attEnd = new Date(start.getTime() + (attLimit + 5) * 60000); // 5m grace period
+
+    const active = now >= start && now <= attEnd;
+    const remainingMs = attEnd.getTime() - now.getTime();
+    const remainingMins = Math.max(1, Math.ceil(remainingMs / 60000));
+    const windowEndStr = attEnd.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    return {
+      active,
+      remainingMins,
+      windowEndStr,
+      attLimit,
+      isExpired: now > attEnd,
+      isUpcoming: now < start,
+    };
+  };
+
+  const isSessionActive = (session) => {
+    return getAttendanceWindowDetails(session).active;
   };
 
   const selectedDateObj = availableDates.find((d) => d.key === selectedScheduleDate);
@@ -629,39 +651,44 @@ export default function StudentDashboard() {
             </div>
 
             {/* LIVE ATTENDANCE BANNER (High visibility when session is active now) */}
-            {activeSession && (
-              <div className="bg-gradient-to-r from-emerald-600 via-emerald-700 to-teal-800 rounded-2xl p-5 sm:p-6 text-white shadow-xl flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 border-2 border-emerald-400 animate-pulse-subtle">
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-full bg-white animate-ping"></span>
-                    <span className="text-xs uppercase tracking-widest font-black text-emerald-200">
-                      Live Attendance Open Now
-                    </span>
-                  </div>
-                  <h3 className="text-xl font-black">{activeSession.title}</h3>
-                  <div className="flex flex-wrap items-center gap-3 text-xs text-emerald-100 font-medium">
-                    {activeSession.resource_speaker !== '-' && (
-                      <span>👤 Speaker: {activeSession.resource_speaker}</span>
-                    )}
-                    {activeSession.location !== '-' && (
-                      <span>📍 Location: {activeSession.location}</span>
-                    )}
-                    <span>
-                      ⏰ Window Ends: {new Date(new Date(activeSession.start_time).getTime() + (activeSession.duration_minutes + 5) * 60000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                  </div>
-                </div>
+            {activeSession && (() => {
+              const activeWindowInfo = getAttendanceWindowDetails(activeSession);
+              if (!activeWindowInfo.active) return null;
 
-                <button
-                  onClick={() => handleMarkAttendance(activeSession)}
-                  disabled={markingAttendance}
-                  className="bg-white text-emerald-900 hover:bg-emerald-50 font-black py-3 px-6 rounded-xl shadow-lg flex items-center justify-center gap-2 text-base transition transform hover:scale-105 active:scale-95"
-                >
-                  <FaCheckCircle className="text-emerald-600 text-xl" />
-                  {markingAttendance ? "Recording..." : "Mark Present Now"}
-                </button>
-              </div>
-            )}
+              return (
+                <div className="bg-gradient-to-r from-emerald-600 via-emerald-700 to-teal-800 rounded-2xl p-5 sm:p-6 text-white shadow-xl flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 border-2 border-emerald-400 animate-pulse-subtle">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="w-3 h-3 rounded-full bg-white animate-ping"></span>
+                      <span className="text-xs uppercase tracking-widest font-black text-emerald-200">
+                        Live Attendance Open ({activeWindowInfo.remainingMins} mins left)
+                      </span>
+                    </div>
+                    <h3 className="text-xl font-black">{activeSession.title}</h3>
+                    <div className="flex flex-wrap items-center gap-3 text-xs text-emerald-100 font-medium">
+                      {activeSession.resource_speaker !== '-' && (
+                        <span>👤 Speaker: {activeSession.resource_speaker}</span>
+                      )}
+                      {activeSession.location !== '-' && (
+                        <span>📍 Location: {activeSession.location}</span>
+                      )}
+                      <span>
+                        ⏰ Window Closes at: <strong>{activeWindowInfo.windowEndStr}</strong> ({activeWindowInfo.remainingMins}m left)
+                      </span>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => handleMarkAttendance(activeSession)}
+                    disabled={markingAttendance}
+                    className="bg-white text-emerald-900 hover:bg-emerald-50 font-black py-3 px-6 rounded-xl shadow-lg flex items-center justify-center gap-2 text-base transition transform hover:scale-105 active:scale-95 shrink-0"
+                  >
+                    <FaCheckCircle className="text-emerald-600 text-xl" />
+                    {markingAttendance ? "Recording..." : "Mark Present Now"}
+                  </button>
+                </div>
+              );
+            })()}
 
             {/* SECTION 1: TODAY'S SESSION ANNOUNCEMENTS */}
             <div className="card p-6 space-y-4 shadow-sm border border-slate-200">
@@ -685,39 +712,47 @@ export default function StudentDashboard() {
               ) : (
                 <div className="space-y-4">
                   {filteredSchedule.map((session) => {
-                    const active = isSessionActive(session);
+                    const windowInfo = getAttendanceWindowDetails(session);
                     const start = new Date(session.start_time);
-                    const end = new Date(start.getTime() + session.duration_minutes * 60000);
-                    const timeStr = `${start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+                    const sessionDuration = session.duration_minutes || 60;
+                    const sessionEnd = new Date(start.getTime() + sessionDuration * 60000);
+                    const timeStr = `${start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - ${sessionEnd.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
 
                     return (
                       <div
                         key={session.id}
                         className={`bg-white border rounded-xl p-5 shadow-sm transition relative overflow-hidden ${
-                          active
+                          windowInfo.active
                             ? 'border-emerald-500 ring-2 ring-emerald-500/20'
                             : 'border-slate-200 hover:border-slate-300'
                         }`}
                       >
-                        {active && (
+                        {windowInfo.active && (
                           <div className="absolute top-0 left-0 w-1.5 h-full bg-emerald-500"></div>
                         )}
                         <div className="flex justify-between items-start mb-2">
                           <h3 className="font-bold text-slate-900 text-lg">{session.title}</h3>
-                          {active ? (
+                          {windowInfo.active ? (
                             <span className="bg-emerald-100 text-emerald-800 text-xs font-black px-2.5 py-1 rounded-full flex items-center gap-1">
-                              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span> Live Attendance Open
+                              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span> Live Attendance ({windowInfo.remainingMins}m left)
+                            </span>
+                          ) : windowInfo.isExpired ? (
+                            <span className="bg-rose-100 text-rose-800 text-xs font-semibold px-2.5 py-1 rounded-full">
+                              Attendance Limit Expired
                             </span>
                           ) : (
                             <span className="bg-slate-100 text-slate-600 text-xs font-semibold px-2.5 py-1 rounded-full">
-                              Scheduled
+                              Upcoming Session
                             </span>
                           )}
                         </div>
 
                         <div className="flex flex-wrap items-center gap-4 text-xs font-medium text-slate-600 mb-3">
                           <span className="flex items-center gap-1 text-slate-800 font-semibold">
-                            <FaClock className="text-primary-600" /> {timeStr}
+                            <FaClock className="text-primary-600" /> Session: {timeStr} ({sessionDuration}m)
+                          </span>
+                          <span className="flex items-center gap-1 text-emerald-700 font-semibold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                            ⏱️ Attendance Limit: {windowInfo.attLimit} Mins (Closes {windowInfo.windowEndStr})
                           </span>
                           {session.resource_speaker !== '-' && (
                             <span className="flex items-center gap-1">
@@ -731,15 +766,20 @@ export default function StudentDashboard() {
                           )}
                         </div>
 
-                        {active && (
+                        {/* Mark Attendance Button: ONLY visible when attendance window is ACTIVE */}
+                        {windowInfo.active ? (
                           <button
                             onClick={() => handleMarkAttendance(session)}
                             disabled={markingAttendance}
-                            className="w-full btn-primary !py-2.5 bg-emerald-600 hover:bg-emerald-700 justify-center font-bold text-white shadow-md"
+                            className="w-full btn-primary !py-2.5 bg-emerald-600 hover:bg-emerald-700 justify-center font-bold text-white shadow-md transition transform hover:scale-[1.01]"
                           >
-                            {markingAttendance ? "Recording..." : <><FaCheckCircle className="mr-2" /> Mark Attendance Now</>}
+                            {markingAttendance ? "Recording..." : <><FaCheckCircle className="mr-2" /> Mark Attendance Now ({windowInfo.remainingMins}m left)</>}
                           </button>
-                        )}
+                        ) : windowInfo.isExpired ? (
+                          <div className="w-full bg-slate-100 text-slate-500 font-semibold py-2 px-4 rounded-lg text-xs text-center border border-slate-200">
+                            🔒 Attendance time limit expired at {windowInfo.windowEndStr}. Marking is closed.
+                          </div>
+                        ) : null}
                       </div>
                     );
                   })}
