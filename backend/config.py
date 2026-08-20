@@ -30,9 +30,9 @@ class Config:
                        os.getenv("ALLOWED_ORIGINS", FRONTEND_URL).split(",")
                        if origin.strip()]
 
-    # --- Database (MySQL) ------------------------------------------------------
+    # --- Database (PostgreSQL) --------------------------------------------------
     DB_HOST = os.getenv("DB_HOST", "localhost")
-    DB_PORT = os.getenv("DB_PORT", "3306")
+    DB_PORT = os.getenv("DB_PORT", "5432")
     DB_NAME = os.getenv("DB_NAME", "induction_db")
     DB_USER = os.getenv("DB_USER", "root")
     DB_PASSWORD = os.getenv("DB_PASSWORD", "")
@@ -52,9 +52,13 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {"pool_pre_ping": True, "pool_recycle": 280}
 
-    # --- Email (Google Apps Script) ---------------------------------------------
+    # --- Email (SMTP & Google Apps Script) --------------------------------------
     GAS_WEB_APP_URL = os.getenv("GAS_WEB_APP_URL", "")
-    MAIL_DEFAULT_SENDER = os.getenv("EMAIL_ADDRESS", "noreply@mitaoe.ac.in")
+    EMAIL_ADDRESS = os.getenv("EMAIL_ADDRESS", "testsameer662@gmail.com")
+    EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD", "vxxglodtoulsnlna")
+    SMTP_SERVER = os.getenv("SMTP_SERVER", "smtp.gmail.com")
+    SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
+    MAIL_DEFAULT_SENDER = os.getenv("EMAIL_ADDRESS", "testsameer662@gmail.com")
 
     # --- Admin ----------------------------------------------------------------
     ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")

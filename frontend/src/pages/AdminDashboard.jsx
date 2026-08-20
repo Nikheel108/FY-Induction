@@ -12,6 +12,8 @@ import {
   FaSearch,
   FaTrash,
   FaUsers,
+  FaUpload,
+  FaCommentDots,
 } from "react-icons/fa";
 
 import ConfirmDialog from "../components/ConfirmDialog";
@@ -29,6 +31,7 @@ import {
   resendEmail,
   updateStudent,
 } from "../services/studentService";
+import { uploadPrns, getContactQueries } from "../services/adminService";
 import { DEPARTMENTS } from "../constants";
 import { exportCSV, exportExcel } from "../utils/exporters";
 
@@ -61,6 +64,11 @@ export default function AdminDashboard() {
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
   const [resendingId, setResendingId] = useState(null);
+  
+  // PRN Upload state
+  const [showUploadPrn, setShowUploadPrn] = useState(false);
+  const [prnInput, setPrnInput] = useState("");
+  const [uploadingPrn, setUploadingPrn] = useState(false);
 
   const searchTimer = useRef(null);
 
@@ -71,9 +79,12 @@ export default function AdminDashboard() {
     return () => clearTimeout(searchTimer.current);
   }, [search]);
 
+  const [queryStats, setQueryStats] = useState(null);
+
   // Load statistics once.
   useEffect(() => {
     getStatistics().then((res) => setStats(res.statistics)).catch(() => setStats(null));
+    getContactQueries().then((res) => setQueryStats(res.stats)).catch(() => setQueryStats(null));
   }, []);
 
   // Load the student table whenever filters / pagination change.
@@ -183,6 +194,24 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleUploadPrns = async (e) => {
+    e.preventDefault();
+    if (!prnInput.trim()) return;
+
+    setUploadingPrn(true);
+    const prnsArray = prnInput.split(/[\n,]+/).map(p => p.trim()).filter(p => p);
+    try {
+      const res = await uploadPrns(prnsArray);
+      toast.success(res.message);
+      setShowUploadPrn(false);
+      setPrnInput("");
+    } catch (error) {
+      toast.error(error.message || "Failed to upload PRNs");
+    } finally {
+      setUploadingPrn(false);
+    }
+  };
+
   // --- Render ------------------------------------------------------------------
 
   return (
@@ -213,8 +242,10 @@ export default function AdminDashboard() {
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <StatCard icon={FaUsers} label="Total Registrations" value={stats?.total ?? "—"} accent="primary" />
             <StatCard icon={FaBuilding} label="Departments" value={stats?.by_department?.length ?? "—"} accent="violet" />
-            <StatCard icon={FaUsers} label="Students" value={stats?.total ?? "—"} accent="green" />
-            <StatCard icon={FaBuilding} label="Programs" value="1" accent="amber" />
+            <Link to="/admin/contact-queries" className="block transition hover:-translate-y-0.5">
+              <StatCard icon={FaCommentDots} label="Pending Queries" value={queryStats?.pending ?? "0"} accent="amber" />
+            </Link>
+            <StatCard icon={FaBuilding} label="Programs" value="1" accent="green" />
           </div>
 
           <div className="grid gap-6 lg:grid-cols-3">
@@ -252,6 +283,9 @@ export default function AdminDashboard() {
                 </div>
 
                 <div className="flex flex-col sm:flex-row gap-2 mt-2 sm:mt-0">
+                  <Link to="/admin/upload-students" className="btn-secondary !px-3 !py-2 text-primary-700 w-full sm:w-auto flex items-center gap-2 justify-center">
+                    <FaUpload /> <span className="inline md:inline">Upload PRNs</span>
+                  </Link>
                   <button type="button" className="btn-secondary !px-3 !py-2 text-emerald-700 w-full sm:w-auto" onClick={() => handleExport("excel")}>
                     <FaFileExcel /> <span className="inline md:inline">Excel</span>
                   </button>
@@ -384,6 +418,38 @@ export default function AdminDashboard() {
         title="Delete Student"
         message={`Are you sure you want to delete ${deleteTarget?.full_name ?? "this student"}? This action cannot be undone.`}
       />
+
+      {/* Upload PRNs Modal */}
+      <Modal open={showUploadPrn} onClose={() => setShowUploadPrn(false)} title="Upload Valid PRNs">
+        <form onSubmit={handleUploadPrns} className="space-y-4 p-1">
+          <p className="text-sm text-slate-500">
+            Paste a list of PRNs (one per line, or comma-separated) that are authorized to register.
+          </p>
+          <textarea
+            className="input-field w-full h-40 font-mono text-sm"
+            placeholder={"PRN1\nPRN2\nPRN3"}
+            value={prnInput}
+            onChange={(e) => setPrnInput(e.target.value)}
+            required
+          />
+          <div className="flex justify-end gap-3 pt-4">
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => setShowUploadPrn(false)}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="btn-primary"
+              disabled={uploadingPrn}
+            >
+              {uploadingPrn ? "Uploading..." : "Upload PRNs"}
+            </button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

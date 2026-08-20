@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { FaCamera, FaUpload, FaTimes } from "react-icons/fa";
 
@@ -26,7 +26,7 @@ const EMAIL_RULES = (required = true) => ({
  * Handles client-side validation via react-hook-form; the backend re-validates
  * everything server-side.
  */
-export default function StudentForm({ defaultValues = {}, onSubmit, submitLabel = "Submit", loading = false }) {
+export default function StudentForm({ defaultValues = {}, onSubmit, submitLabel = "Submit", loading = false, readOnlyPrn = false }) {
   const [photoPreview, setPhotoPreview] = useState(defaultValues.photo_base64 || null);
   const fileInputRef = useRef(null);
 
@@ -34,21 +34,37 @@ export default function StudentForm({ defaultValues = {}, onSubmit, submitLabel 
     register,
     handleSubmit,
     setValue,
+    reset,
     formState: { errors },
   } = useForm({
     defaultValues: {
-      full_name: "",
-      prn: "",
-      department: DEPARTMENTS[0],  // pre-select the only available department
-      student_email: "",
-      student_phone: "",
-      parent_name: "",
-      parent_email: "",
-      parent_phone: "",
-      photo_base64: "",
-      ...defaultValues, // override with provided defaults (e.g., when editing)
+      full_name: defaultValues.full_name || "",
+      prn: defaultValues.prn || "",
+      department: defaultValues.department || DEPARTMENTS[0],
+      student_email: defaultValues.student_email || "",
+      student_phone: defaultValues.student_phone || "",
+      parent_name: defaultValues.parent_name || "",
+      parent_email: defaultValues.parent_email || "",
+      parent_phone: defaultValues.parent_phone || "",
+      photo_base64: defaultValues.photo_base64 || "",
     },
   });
+
+  useEffect(() => {
+    if (defaultValues && defaultValues.prn) {
+      reset({
+        full_name: defaultValues.full_name || "",
+        prn: defaultValues.prn || "",
+        department: defaultValues.department || DEPARTMENTS[0],
+        student_email: defaultValues.student_email || "",
+        student_phone: defaultValues.student_phone || "",
+        parent_name: defaultValues.parent_name || "",
+        parent_email: defaultValues.parent_email || "",
+        parent_phone: defaultValues.parent_phone || "",
+        photo_base64: defaultValues.photo_base64 || "",
+      });
+    }
+  }, [defaultValues, reset]);
 
   const handlePhotoChange = (e) => {
     const file = e.target.files?.[0];
@@ -64,9 +80,9 @@ export default function StudentForm({ defaultValues = {}, onSubmit, submitLabel 
     reader.onload = (event) => {
       const img = new Image();
       img.onload = () => {
-        // Resize down to max 400x400 to save bandwidth & db space
+        // Resize down to max 300x300 to save bandwidth & db space
         const canvas = document.createElement("canvas");
-        const MAX_SIZE = 400;
+        const MAX_SIZE = 300;
         let width = img.width;
         let height = img.height;
 
@@ -84,7 +100,7 @@ export default function StudentForm({ defaultValues = {}, onSubmit, submitLabel 
         ctx.drawImage(img, 0, 0, width, height);
 
         // Convert to highly compressed JPEG
-        const dataUrl = canvas.toDataURL("image/jpeg", 0.7);
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.6);
         setPhotoPreview(dataUrl);
         setValue("photo_base64", dataUrl, { shouldDirty: true });
       };
@@ -118,6 +134,8 @@ export default function StudentForm({ defaultValues = {}, onSubmit, submitLabel 
               {...register("prn", { required: "PRN is required" })}
               error={errors.prn}
               placeholder="e.g. PRN260101"
+              disabled={readOnlyPrn}
+              className={readOnlyPrn ? "bg-slate-100 cursor-not-allowed" : ""}
             />
           </Field>
 

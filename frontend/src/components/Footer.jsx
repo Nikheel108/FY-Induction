@@ -10,9 +10,11 @@ export default function Footer() {
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:grid-cols-3">
         <div>
           <div className="flex items-center gap-2">
-            <span className="grid h-8 w-8 place-items-center rounded-md bg-primary-700 text-white">
-              <FaGraduationCap />
-            </span>
+            <img
+              src="/logo.png"
+              alt="MITAOE Logo"
+              className="h-8 w-auto object-contain flex-shrink-0"
+            />
             <span className="font-bold text-slate-900">MIT Academy of Engineering</span>
           </div>
           <p className="mt-3 text-sm leading-relaxed text-slate-500">
@@ -25,8 +27,10 @@ export default function Footer() {
           <h4 className="text-sm font-bold text-slate-900">Quick Links</h4>
           <ul className="mt-3 space-y-2 text-sm text-slate-500">
             <li><Link to="/" className="transition hover:text-primary-700">Home</Link></li>
-            <li><Link to="/register" className="transition hover:text-primary-700">Student Registration</Link></li>
-            <li><Link to="/admin/login" className="transition hover:text-primary-700">Admin Login</Link></li>
+            <li><Link to="/attendance" className="transition hover:text-primary-700">Mark Attendance</Link></li>
+            <li><Link to="/contact" className="transition hover:text-primary-700">Contact & Support</Link></li>
+            <li><Link to="/student-login" className="transition hover:text-primary-700">Student Access</Link></li>
+            <li><Link to="/admin/login" className="transition hover:text-primary-700">Admin Portal</Link></li>
           </ul>
         </div>
 
@@ -35,7 +39,7 @@ export default function Footer() {
           <ul className="mt-3 space-y-2 text-sm text-slate-500">
             <li className="flex items-center gap-2"><FaMapMarkerAlt /> Alandi, Pune, Maharashtra</li>
             <li className="flex items-center gap-2"><FaPhone /> +91-82178-59747</li>
-            <li className="flex items-center gap-2"><FaEnvelope /> induction@mitaoe.ac.in</li>
+            <li className="flex items-center gap-2"><FaEnvelope /> fyinduction2627@gmail.com</li>
           </ul>
         </div>
       </div>

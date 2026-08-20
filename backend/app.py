@@ -11,11 +11,9 @@ can later be served by Gunicorn on Render with only environment changes.
 
 import logging
 import os
-import urllib.parse
-import urllib.parse
-import urllib.parse
 
 from flask import Flask
+from flask_cors import CORS
 
 from config import Config
 from routes.admin_routes import admin_bp
@@ -23,6 +21,7 @@ from routes.student_routes import student_bp
 from services import utils
 from services.database import db
 from routes.attendance_routes import attendance_bp
+from routes.highlight_routes import highlights_bp
 
 # Configure a consistent log format for terminal output.
 logging.basicConfig(
@@ -39,6 +38,7 @@ def create_app(config_class=Config):
 
     # --- Extensions ------------------------------------------------------------
     db.init_app(app)
+    CORS(app, resources={r"/api/*": {"origins": "*"}})
 
     # CORS: allow any origin to talk to this API since we use Bearer tokens.
     # Using a manual after_request hook to guarantee headers are always attached.
@@ -47,12 +47,14 @@ def create_app(config_class=Config):
         response.headers["Access-Control-Allow-Origin"] = "*"
         response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS, PUT, PATCH, DELETE"
         response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+        response.headers["Access-Control-Expose-Headers"] = "Content-Disposition"
         return response
 
     # --- Blueprints --------------------------------------------------------------
     app.register_blueprint(student_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(attendance_bp)
+    app.register_blueprint(highlights_bp)
 
     # --- Health check -------------------------------------------------------------
     @app.get("/api/health")
@@ -64,6 +66,54 @@ def create_app(config_class=Config):
     with app.app_context():
         try:
             db.create_all()
+            
+            # Auto-migrate valid_prns table to add new columns (ignore if they already exist)
+            from sqlalchemy import text
+            try:
+                db.session.execute(text("ALTER TABLE valid_prns ADD COLUMN expected_name VARCHAR(100);"))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+                
+            try:
+                db.session.execute(text("ALTER TABLE valid_prns ADD COLUMN expected_department VARCHAR(100);"))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+                
+            # Auto-migrate event_sessions table
+            try:
+                db.session.execute(text("ALTER TABLE event_sessions ADD COLUMN resource_speaker VARCHAR(150);"))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+                
+            try:
+                db.session.execute(text("ALTER TABLE event_sessions ADD COLUMN location VARCHAR(150);"))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+                
+            # Auto-migrate highlights table
+            try:
+                db.session.execute(text("ALTER TABLE highlights ADD COLUMN resource_speaker VARCHAR(150);"))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+
+            # Auto-migrate students table
+            try:
+                db.session.execute(text("ALTER TABLE students ADD COLUMN password_hash VARCHAR(255);"))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+
+            try:
+                db.session.execute(text("ALTER TABLE students ADD COLUMN is_first_login BOOLEAN NOT NULL DEFAULT TRUE;"))
+                db.session.commit()
+            except Exception:
+                db.session.rollback()
+
             logger.info("Database tables ensured (db=%s).", app.config["DB_NAME"])
         except Exception as exc:  # noqa: BLE001 - startup must not crash the API
             logger.error("Could not create the tables: %s", exc)
@@ -94,5 +144,4 @@ app = create_app()
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", "5000"))
-    # ``use_reloader=False`` avoids double table-creation / duplicate workers.
-    app.run(host="0.0.0.0", port=port, debug=True, use_reloader=False)
+    app.run(host="0.0.0.0", port=port, debug=True, use_reloader=True)

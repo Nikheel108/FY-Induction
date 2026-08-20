@@ -6,11 +6,18 @@ import Register from "./pages/Register";
 import Success from "./pages/Success";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminUploadStudents from "./pages/AdminUploadStudents";
 import StudentDetails from "./pages/StudentDetails";
 import NotFound from "./pages/NotFound";
 import Attendance from "./pages/Attendance";           // new
 import AdminAttendance from "./pages/AdminAttendance"; // new
 import AdminBroadcast from "./pages/AdminBroadcast";
+import AdminEventSessions from "./pages/AdminEventSessions";
+import AdminHighlights from "./pages/AdminHighlights";
+import StudentLogin from "./pages/StudentLogin";
+import StudentDashboard from "./pages/StudentDashboard";
+import Contact from "./pages/Contact";
+import AdminContactQueries from "./pages/AdminContactQueries";
 
 export default function App() {
   return (
@@ -19,13 +26,25 @@ export default function App() {
       <Route path="/register" element={<Register />} />
       <Route path="/success" element={<Success />} />
       <Route path="/admin/login" element={<AdminLogin />} />
-      <Route path="/attendance" element={<Attendance />} />  {/* public attendance */}
+      <Route path="/attendance" element={<Attendance />} />  {/* public attendance kiosk */}
+      <Route path="/contact" element={<Contact />} />        {/* public contact us page */}
+      <Route path="/student-login" element={<StudentLogin />} />
+      <Route path="/student/register" element={<Register />} />
+      <Route path="/student/dashboard" element={<StudentDashboard />} />
 
       <Route
         path="/admin/dashboard"
         element={
           <ProtectedRoute>
             <AdminDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/upload-students"
+        element={
+          <ProtectedRoute>
+            <AdminUploadStudents />
           </ProtectedRoute>
         }
       />
@@ -50,6 +69,30 @@ export default function App() {
         element={
           <ProtectedRoute>
             <AdminBroadcast />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/sessions"
+        element={
+          <ProtectedRoute>
+            <AdminEventSessions />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/highlights"
+        element={
+          <ProtectedRoute>
+            <AdminHighlights />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin/contact-queries"
+        element={
+          <ProtectedRoute>
+            <AdminContactQueries />
           </ProtectedRoute>
         }
       />

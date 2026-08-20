@@ -15,33 +15,33 @@
 
 @layer components {
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-primary-700 px-5 py-2.5
-           text-sm font-semibold text-white shadow-sm transition hover:bg-primary-800
+    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-primary-600 px-5 py-2.5
+           text-sm font-semibold text-white shadow-md transition-all duration-300 ease-in-out hover:-translate-y-0.5 hover:shadow-lg hover:bg-primary-700
            focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2
-           disabled:cursor-not-allowed disabled:opacity-60;
+           disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:shadow-md;
   }
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-slate-300
-           bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition
-           hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-primary-500
-           disabled:cursor-not-allowed disabled:opacity-60;
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200
+           bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition-all duration-300 ease-in-out
+           hover:-translate-y-0.5 hover:shadow-md hover:border-slate-300 focus:outline-none focus:ring-2 focus:ring-primary-500
+           disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:shadow-sm;
   }
   .btn-danger {
     @apply inline-flex items-center justify-center gap-2 rounded-lg bg-red-600 px-5 py-2.5
-           text-sm font-semibold text-white shadow-sm transition hover:bg-red-700
+           text-sm font-semibold text-white shadow-md transition-all duration-300 ease-in-out hover:-translate-y-0.5 hover:shadow-lg hover:bg-red-700
            focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2
-           disabled:cursor-not-allowed disabled:opacity-60;
+           disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0 disabled:hover:shadow-md;
   }
   .input-field {
-    @apply w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm
-           text-slate-800 shadow-sm transition placeholder:text-slate-400
-           focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-100;
+    @apply w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm
+           text-slate-800 shadow-sm transition-all duration-200 placeholder:text-slate-400
+           focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-100 hover:border-slate-400;
   }
   .input-error {
     @apply border-red-400 focus:border-red-500 focus:ring-red-100;
   }
   .card {
-    @apply rounded-xl border border-slate-200 bg-white shadow-sm;
+    @apply rounded-xl border border-slate-200/60 bg-white shadow-sm transition-all duration-300 hover:shadow-md;
   }
   .section-title {
     @apply text-lg font-bold text-slate-800;
