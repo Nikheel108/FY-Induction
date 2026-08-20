@@ -239,12 +239,13 @@ def create_event_session():
     """Create a new time-bound attendance session."""
     data = request.get_json() or {}
     title = data.get("title", "").strip()
-    duration = data.get("duration_minutes")
+    duration = data.get("duration_minutes") or 60
+    attendance_limit = data.get("attendance_limit_minutes") or 15
     start_time_str = data.get("start_time")
     resource_speaker = data.get("resource_speaker", "-")
     location = data.get("location", "-")
     
-    if not title or not duration or not start_time_str:
+    if not title or not start_time_str:
         return jsonify({"success": False, "message": "Missing required fields."}), 400
         
     try:
@@ -255,7 +256,8 @@ def create_event_session():
     es = EventSession(
         title=title, 
         start_time=start_time, 
-        duration_minutes=duration,
+        duration_minutes=int(duration),
+        attendance_limit_minutes=int(attendance_limit),
         resource_speaker=resource_speaker,
         location=location
     )
@@ -288,6 +290,12 @@ def edit_event_session(session_id):
     if "duration_minutes" in data:
         try:
             es.duration_minutes = int(data["duration_minutes"])
+        except ValueError:
+            pass
+
+    if "attendance_limit_minutes" in data:
+        try:
+            es.attendance_limit_minutes = int(data["attendance_limit_minutes"])
         except ValueError:
             pass
 
@@ -337,7 +345,7 @@ def delete_event_session(session_id):
 def get_active_session():
     """
     Returns the currently active event session.
-    Active means current UTC time is between start_time and (start_time + duration + 5 mins).
+    Active means current UTC time is between start_time and (start_time + attendance_limit + 5 mins).
     """
     now = datetime.utcnow()
     # Find the most recently started session that is still active
@@ -345,7 +353,8 @@ def get_active_session():
     sessions = EventSession.query.filter(EventSession.start_time <= now).order_by(EventSession.start_time.desc()).limit(5).all()
     
     for s in sessions:
-        end_time = s.start_time + timedelta(minutes=s.duration_minutes + 5)
+        att_limit = s.attendance_limit_minutes if s.attendance_limit_minutes is not None else s.duration_minutes
+        end_time = s.start_time + timedelta(minutes=att_limit + 5)
         if now <= end_time:
             return jsonify({"success": True, "active_session": s.to_dict()})
             
@@ -357,7 +366,8 @@ def get_current_active_session():
     now = datetime.utcnow()
     sessions = EventSession.query.filter(EventSession.start_time <= now).order_by(EventSession.start_time.desc()).limit(5).all()
     for s in sessions:
-        end_time = s.start_time + timedelta(minutes=s.duration_minutes + 5)
+        att_limit = s.attendance_limit_minutes if s.attendance_limit_minutes is not None else s.duration_minutes
+        end_time = s.start_time + timedelta(minutes=att_limit + 5)
         if now <= end_time:
             return s
     return None

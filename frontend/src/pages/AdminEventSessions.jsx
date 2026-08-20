@@ -28,6 +28,7 @@ export default function AdminEventSessions() {
     title: "",
     start_time: "",
     duration_minutes: 60,
+    attendance_limit_minutes: 15,
     resource_speaker: "",
     location: "",
   });
@@ -89,19 +90,19 @@ export default function AdminEventSessions() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.title || !formData.start_time || !formData.duration_minutes) {
+    if (!formData.title || !formData.start_time) {
       toast.error("Please fill in all required fields.");
       return;
     }
 
     try {
       setSubmitting(true);
-      // Convert local datetime-local value to ISO string with UTC timezone
       const localDate = new Date(formData.start_time);
       const payload = {
         title: formData.title.trim(),
         start_time: localDate.toISOString(),
-        duration_minutes: parseInt(formData.duration_minutes, 10),
+        duration_minutes: parseInt(formData.duration_minutes || 60, 10),
+        attendance_limit_minutes: parseInt(formData.attendance_limit_minutes || 15, 10),
         resource_speaker: formData.resource_speaker.trim() || "-",
         location: formData.location.trim() || "-",
       };
@@ -114,7 +115,7 @@ export default function AdminEventSessions() {
         await createEventSession(payload);
         toast.success("Event session created successfully!");
       }
-      setFormData({ title: "", start_time: "", duration_minutes: 60, resource_speaker: "", location: "" });
+      setFormData({ title: "", start_time: "", duration_minutes: 60, attendance_limit_minutes: 15, resource_speaker: "", location: "" });
       loadSessions();
     } catch (err) {
       toast.error(err.message || "Failed to save session.");
@@ -142,6 +143,7 @@ export default function AdminEventSessions() {
         title: session.title || "",
         start_time: localISOTime,
         duration_minutes: session.duration_minutes || 60,
+        attendance_limit_minutes: session.attendance_limit_minutes || 15,
         resource_speaker: (session.resource_speaker === "-" || !session.resource_speaker) ? "" : session.resource_speaker,
         location: (session.location === "-" || !session.location) ? "" : session.location,
       });
@@ -156,7 +158,7 @@ export default function AdminEventSessions() {
 
   const handleCancelEdit = () => {
     setEditingId(null);
-    setFormData({ title: "", start_time: "", duration_minutes: 60, resource_speaker: "", location: "" });
+    setFormData({ title: "", start_time: "", duration_minutes: 60, attendance_limit_minutes: 15, resource_speaker: "", location: "" });
   };
 
   const handleDelete = async (id) => {
@@ -171,49 +173,37 @@ export default function AdminEventSessions() {
     }
   };
 
-  const handleAdjustDuration = async (session, deltaMinutes) => {
-    try {
-      const currentDuration = session.duration_minutes || 60;
-      const newDuration = Math.max(5, currentDuration + deltaMinutes);
-      await updateEventSession(session.id, { duration_minutes: newDuration });
-      const label = deltaMinutes > 0 ? `+${deltaMinutes}m` : `${deltaMinutes}m`;
-      toast.success(`Updated attendance limit by ${label} (New limit: ${newDuration} mins)`);
-      loadSessions();
-    } catch (err) {
-      toast.error(err.message || "Failed to update duration limit.");
-    }
-  };
-
   const handleOpenTimeLimitModal = (session) => {
     setTimeLimitSession(session);
-    setTimeLimitMinutes(session.duration_minutes || 60);
+    setTimeLimitMinutes(session.attendance_limit_minutes || 15);
   };
 
   const handleSaveTimeLimitModal = async () => {
     if (!timeLimitSession) return;
     const finalMinutes = parseInt(timeLimitMinutes, 10);
-    if (isNaN(finalMinutes) || finalMinutes < 5) {
-      toast.error("Please enter a valid duration of at least 5 minutes.");
+    if (isNaN(finalMinutes) || finalMinutes < 1) {
+      toast.error("Please enter a valid attendance timing limit.");
       return;
     }
 
     try {
       setSavingTimeLimit(true);
-      await updateEventSession(timeLimitSession.id, { duration_minutes: finalMinutes });
-      toast.success(`Attendance time limit updated for "${timeLimitSession.title}" to ${finalMinutes} mins!`);
+      await updateEventSession(timeLimitSession.id, { attendance_limit_minutes: finalMinutes });
+      toast.success(`Attendance timing limit updated for "${timeLimitSession.title}" to ${finalMinutes} mins!`);
       setTimeLimitSession(null);
       loadSessions();
     } catch (err) {
-      toast.error(err.message || "Failed to update attendance time limit.");
+      toast.error(err.message || "Failed to update attendance timing limit.");
     } finally {
       setSavingTimeLimit(false);
     }
   };
 
   const getSessionActiveInfo = (session) => {
-    if (!session.start_time) return { status: 'Ended', active: false, windowStr: '—' };
+    if (!session.start_time) return { status: 'Ended', active: false, windowStr: '—', attLimit: 15 };
     const start = new Date(session.start_time);
-    const end = new Date(start.getTime() + (session.duration_minutes + 5) * 60000); // 5m grace
+    const attLimit = session.attendance_limit_minutes ?? 15;
+    const end = new Date(start.getTime() + (attLimit + 5) * 60000); // 5m grace
     const now = new Date();
 
     const startStr = start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -223,11 +213,11 @@ export default function AdminEventSessions() {
     if (now >= start && now <= end) {
       const remainingMs = end - now;
       const remainingMins = Math.ceil(remainingMs / 60000);
-      return { status: `Live Now (${remainingMins}m left)`, active: true, windowStr };
+      return { status: `Attendance Open (${remainingMins}m left)`, active: true, windowStr, attLimit };
     } else if (now < start) {
-      return { status: 'Upcoming', active: false, windowStr };
+      return { status: 'Upcoming', active: false, windowStr, attLimit };
     } else {
-      return { status: 'Ended', active: false, windowStr };
+      return { status: 'Attendance Closed', active: false, windowStr, attLimit };
     }
   };
 
@@ -352,20 +342,35 @@ export default function AdminEventSessions() {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700">Duration (Minutes)</label>
-                  <input
-                    type="number"
-                    name="duration_minutes"
-                    value={formData.duration_minutes}
-                    onChange={handleChange}
-                    min="1"
-                    className="input-field mt-1"
-                    required
-                  />
-                  <p className="text-xs text-slate-500 mt-1">
-                    Attendance remains open until Duration + 5 mins grace period.
-                  </p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700">Session Duration (Mins)</label>
+                    <input
+                      type="number"
+                      name="duration_minutes"
+                      value={formData.duration_minutes}
+                      onChange={handleChange}
+                      min="1"
+                      placeholder="60"
+                      className="input-field mt-1"
+                      required
+                    />
+                    <p className="text-[10px] text-slate-400 mt-0.5">Total event time</p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700">Attendance Limit (Mins)</label>
+                    <input
+                      type="number"
+                      name="attendance_limit_minutes"
+                      value={formData.attendance_limit_minutes}
+                      onChange={handleChange}
+                      min="1"
+                      placeholder="10"
+                      className="input-field mt-1 border-emerald-300 focus:border-emerald-500"
+                      required
+                    />
+                    <p className="text-[10px] text-emerald-600 font-medium mt-0.5">Active window</p>
+                  </div>
                 </div>
 
                 <button
@@ -447,8 +452,8 @@ export default function AdminEventSessions() {
                     <thead className="bg-slate-50 text-xs uppercase text-slate-500 border-b border-slate-200">
                       <tr>
                         <th className="px-3 py-3 font-semibold rounded-tl-lg">Title & Speaker</th>
-                        <th className="px-3 py-3 font-semibold">Attendance Live Window</th>
-                        <th className="px-3 py-3 font-semibold text-center">Duration & Extend</th>
+                        <th className="px-3 py-3 font-semibold text-center">Session Duration</th>
+                        <th className="px-3 py-3 font-semibold text-center">Attendance System Active Limit</th>
                         <th className="px-3 py-3 font-semibold text-center rounded-tr-lg">Actions</th>
                       </tr>
                     </thead>
@@ -487,81 +492,42 @@ export default function AdminEventSessions() {
                               </div>
                             </td>
 
-                            {/* Attendance Live Time Window */}
-                            <td className="px-3 py-3 text-xs">
+                            {/* Session Total Duration */}
+                            <td className="px-3 py-3 text-center text-xs">
+                              <div className="font-mono font-bold text-slate-700">
+                                {s.duration_minutes || 60} mins
+                              </div>
+                              <span className="text-[10px] text-slate-400">Total Presentation</span>
+                            </td>
+
+                            {/* Attendance System Active Timing Limit */}
+                            <td className="px-3 py-3 text-center text-xs">
                               <div className="font-semibold text-slate-800">
                                 {activeInfo.windowStr}
                               </div>
-                              <div className="mt-1">
+                              <div className="mt-1 flex flex-col items-center gap-1">
                                 {activeInfo.active ? (
-                                  <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                                  <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2.5 py-0.5 rounded-full inline-flex items-center gap-1">
                                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                                    {activeInfo.status}
+                                    {activeInfo.status} ({activeInfo.attLimit}m limit)
                                   </span>
                                 ) : activeInfo.status === 'Upcoming' ? (
                                   <span className="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                                    Upcoming
+                                    Upcoming ({activeInfo.attLimit}m limit)
                                   </span>
                                 ) : (
                                   <span className="bg-slate-100 text-slate-500 text-[10px] font-semibold px-2 py-0.5 rounded-full">
-                                    Ended
+                                    Attendance Closed ({activeInfo.attLimit}m limit)
                                   </span>
                                 )}
-                              </div>
-                            </td>
 
-                            {/* Duration & Quick Increase/Decrease Controls */}
-                            <td className="px-3 py-3 text-center">
-                              <div className="font-mono font-bold text-xs text-slate-800 flex items-center justify-center gap-1">
-                                <FaClock className="text-primary-500 text-xs" />
-                                <span>{s.duration_minutes} mins</span>
-                              </div>
-                              
-                              {/* Increase / Decrease Pill Controls */}
-                              <div className="flex items-center justify-center flex-wrap gap-1 mt-1.5">
-                                <button
-                                  type="button"
-                                  onClick={() => handleAdjustDuration(s, -15)}
-                                  className="text-[10px] bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold px-1.5 py-0.5 rounded border border-rose-200 transition"
-                                  title="Decrease attendance time limit by 15 minutes"
-                                >
-                                  -15m
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleAdjustDuration(s, -5)}
-                                  className="text-[10px] bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold px-1.5 py-0.5 rounded border border-rose-200 transition"
-                                  title="Decrease attendance time limit by 5 minutes"
-                                >
-                                  -5m
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleAdjustDuration(s, 15)}
-                                  className="text-[10px] bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold px-1.5 py-0.5 rounded border border-emerald-200 transition"
-                                  title="Increase attendance time limit by 15 minutes"
-                                >
-                                  +15m
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => handleAdjustDuration(s, 30)}
-                                  className="text-[10px] bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold px-1.5 py-0.5 rounded border border-emerald-200 transition"
-                                  title="Increase attendance time limit by 30 minutes"
-                                >
-                                  +30m
-                                </button>
-                              </div>
-
-                              {/* Edit Time Limit Modal Button */}
-                              <div className="mt-1.5 flex justify-center">
                                 <button
                                   type="button"
                                   onClick={() => handleOpenTimeLimitModal(s)}
-                                  className="text-[10px] bg-primary-50 hover:bg-primary-100 text-primary-700 font-bold px-2 py-0.5 rounded border border-primary-200 transition flex items-center gap-1 shadow-sm"
-                                  title="Open Time Limit Adjustment Dialog"
+                                  className="text-[11px] bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold px-2.5 py-1 rounded-md border border-emerald-200 transition flex items-center gap-1.5 mt-0.5 shadow-sm"
+                                  title="Edit Attendance Active Timing Limit"
                                 >
-                                  <FaClock className="text-[10px]" /> Edit Limit
+                                  <FaClock className="text-emerald-600" /> Edit Attendance Limit
                                 </button>
                               </div>
                             </td>
@@ -571,8 +537,8 @@ export default function AdminEventSessions() {
                               <div className="flex items-center justify-center gap-1">
                                 <button
                                   onClick={() => handleOpenTimeLimitModal(s)}
-                                  className="p-2 text-primary-600 hover:bg-primary-50 rounded-lg transition"
-                                  title="Adjust Attendance Time Limit"
+                                  className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition"
+                                  title="Edit Attendance Time Limit"
                                 >
                                   <FaClock />
                                 </button>
@@ -608,84 +574,37 @@ export default function AdminEventSessions() {
         </main>
       </div>
 
-      {/* DEDICATED TIME LIMIT ADJUSTMENT MODAL */}
+      {/* DEDICATED ATTENDANCE TIME LIMIT EDIT MODAL */}
       <Modal
         open={!!timeLimitSession}
         onClose={() => setTimeLimitSession(null)}
-        title="Edit Attendance Time Limit"
+        title="Edit Attendance System Time Limit"
       >
         {timeLimitSession && (
           <div className="space-y-4">
             <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
               <h4 className="font-bold text-slate-800 text-sm">{timeLimitSession.title}</h4>
               <p className="text-xs text-slate-500 mt-0.5">
-                Current Window: <span className="font-semibold text-slate-700">{getSessionActiveInfo(timeLimitSession).windowStr}</span>
+                Session Total Duration: <span className="font-semibold text-slate-700">{timeLimitSession.duration_minutes || 60} mins</span>
               </p>
             </div>
 
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-1">
-                Attendance Duration (Minutes)
+                Attendance System Active Limit (Minutes)
               </label>
-              <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => setTimeLimitMinutes((prev) => Math.max(5, parseInt(prev || 0) - 15))}
-                  className="px-3 py-2 bg-rose-100 text-rose-800 hover:bg-rose-200 font-bold text-xs rounded-lg transition shrink-0"
-                >
-                  -15m
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setTimeLimitMinutes((prev) => Math.max(5, parseInt(prev || 0) - 5))}
-                  className="px-3 py-2 bg-rose-100 text-rose-800 hover:bg-rose-200 font-bold text-xs rounded-lg transition shrink-0"
-                >
-                  -5m
-                </button>
-                <input
-                  type="number"
-                  min="5"
-                  value={timeLimitMinutes}
-                  onChange={(e) => setTimeLimitMinutes(e.target.value)}
-                  className="input-field text-center font-bold text-base !py-2 min-w-[70px]"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setTimeLimitMinutes((prev) => parseInt(prev || 0) + 5)}
-                  className="px-3 py-2 bg-emerald-100 text-emerald-800 hover:bg-emerald-200 font-bold text-xs rounded-lg transition shrink-0"
-                >
-                  +5m
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setTimeLimitMinutes((prev) => parseInt(prev || 0) + 15)}
-                  className="px-3 py-2 bg-emerald-100 text-emerald-800 hover:bg-emerald-200 font-bold text-xs rounded-lg transition shrink-0"
-                >
-                  +15m
-                </button>
-              </div>
-            </div>
-
-            {/* Quick Presets */}
-            <div>
-              <span className="text-xs font-semibold text-slate-500 block mb-1.5">Quick Duration Presets:</span>
-              <div className="flex flex-wrap gap-2">
-                {[15, 30, 45, 60, 90, 120].map((mins) => (
-                  <button
-                    key={mins}
-                    type="button"
-                    onClick={() => setTimeLimitMinutes(mins)}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold transition ${
-                      parseInt(timeLimitMinutes) === mins
-                        ? "bg-primary-600 text-white shadow-sm"
-                        : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                    }`}
-                  >
-                    {mins} Mins
-                  </button>
-                ))}
-              </div>
+              <p className="text-xs text-slate-500 mb-2">
+                Enter how many minutes from session start time the student attendance system will stay ON.
+              </p>
+              <input
+                type="number"
+                min="1"
+                value={timeLimitMinutes}
+                onChange={(e) => setTimeLimitMinutes(e.target.value)}
+                className="input-field text-center font-bold text-lg !py-2.5"
+                placeholder="e.g. 10 or 15"
+                required
+              />
             </div>
 
             <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
@@ -702,7 +621,7 @@ export default function AdminEventSessions() {
                 disabled={savingTimeLimit}
                 className="btn-primary !px-5 !py-2 text-xs"
               >
-                {savingTimeLimit ? "Saving..." : "Save Time Limit"}
+                {savingTimeLimit ? "Saving..." : "Save Attendance Limit"}
               </button>
             </div>
           </div>

@@ -134,12 +134,14 @@ class EventSession(db.Model):
     resource_speaker = db.Column(db.String(150), nullable=True)
     location = db.Column(db.String(150), nullable=True)
     start_time = db.Column(db.DateTime, nullable=False)
-    duration_minutes = db.Column(db.Integer, nullable=False)
+    duration_minutes = db.Column(db.Integer, nullable=False, default=60)
+    attendance_limit_minutes = db.Column(db.Integer, nullable=False, default=15)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
     attendances = db.relationship("Attendance", backref="event_session", lazy=True)
 
     def to_dict(self):
+        att_limit = self.attendance_limit_minutes if self.attendance_limit_minutes is not None else self.duration_minutes
         return {
             "id": self.id,
             "title": self.title,
@@ -147,6 +149,7 @@ class EventSession(db.Model):
             "location": self.location or "-",
             "start_time": self.start_time.isoformat() + "Z" if self.start_time else None,
             "duration_minutes": self.duration_minutes,
+            "attendance_limit_minutes": att_limit,
             "created_at": self.created_at.isoformat() + "Z" if self.created_at else None,
         }
 
