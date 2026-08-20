@@ -175,7 +175,7 @@ export default function AdminEventSessions() {
 
   const handleOpenTimeLimitModal = (session) => {
     setTimeLimitSession(session);
-    setTimeLimitMinutes(session.attendance_limit_minutes || 15);
+    setTimeLimitMinutes(session.attendance_limit_minutes ?? session.duration_minutes ?? 15);
   };
 
   const handleSaveTimeLimitModal = async () => {
@@ -202,7 +202,7 @@ export default function AdminEventSessions() {
   const getSessionActiveInfo = (session) => {
     if (!session.start_time) return { status: 'Ended', active: false, windowStr: '—', attLimit: 15 };
     const start = new Date(session.start_time);
-    const attLimit = session.attendance_limit_minutes ?? 15;
+    const attLimit = session.attendance_limit_minutes ?? session.duration_minutes ?? 15;
     const end = new Date(start.getTime() + (attLimit + 5) * 60000); // 5m grace
     const now = new Date();
 

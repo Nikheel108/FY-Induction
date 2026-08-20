@@ -49,27 +49,28 @@ export default function AdminAttendance() {
 
   // --- Attendance Time Limit Modal State ---
   const [timeLimitModalOpen, setTimeLimitModalOpen] = useState(false);
-  const [editLimitMinutes, setEditLimitMinutes] = useState(60);
+  const [editLimitMinutes, setEditLimitMinutes] = useState(15);
   const [updatingLimit, setUpdatingLimit] = useState(false);
 
   const handleOpenEditTimeLimit = () => {
     if (!sessionData?.session) return;
-    setEditLimitMinutes(sessionData.session.duration_minutes || 60);
+    const currentLimit = sessionData.session.attendance_limit_minutes ?? sessionData.session.duration_minutes ?? 15;
+    setEditLimitMinutes(currentLimit);
     setTimeLimitModalOpen(true);
   };
 
   const handleSaveTimeLimit = async () => {
     if (!sessionData?.session) return;
     const finalMinutes = parseInt(editLimitMinutes, 10);
-    if (isNaN(finalMinutes) || finalMinutes < 5) {
-      toast.error("Please enter a valid attendance time limit of at least 5 minutes.");
+    if (isNaN(finalMinutes) || finalMinutes < 1) {
+      toast.error("Please enter a valid attendance time limit.");
       return;
     }
 
     try {
       setUpdatingLimit(true);
-      await updateEventSession(sessionData.session.id, { duration_minutes: finalMinutes });
-      toast.success(`Attendance time limit updated to ${finalMinutes} mins!`);
+      await updateEventSession(sessionData.session.id, { attendance_limit_minutes: finalMinutes });
+      toast.success(`Attendance active limit updated to ${finalMinutes} mins!`);
       setTimeLimitModalOpen(false);
       loadSessionStats();
       const res = await fetchEventSessions();
@@ -481,7 +482,7 @@ export default function AdminAttendance() {
                   )}
                   <span className="flex items-center gap-1.5 bg-slate-100 px-2.5 py-1 rounded-md font-semibold text-slate-700">
                     <FaClock className="text-primary-600" />
-                    <span>Attendance Time Limit: <strong className="text-slate-900">{sessionData.session.duration_minutes} Mins</strong></span>
+                    <span>Attendance Active Limit: <strong className="text-slate-900">{sessionData.session.attendance_limit_minutes ?? sessionData.session.duration_minutes ?? 15} Mins</strong></span>
                   </span>
                 </div>
               </div>
