@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   FaUsers, FaCheckCircle, FaTimesCircle, FaStar, FaFilter, FaSearch, 
   FaDownload, FaFileExcel, FaPlus, FaTrash, FaEdit, FaCheck, FaImage, 
-  FaBuilding, FaCalendarAlt, FaUserTie, FaMapMarkerAlt, FaHome, FaTimes, FaSync, FaMagic
+  FaBuilding, FaCalendarAlt, FaUserTie, FaMapMarkerAlt, FaHome, FaTimes, FaSync, FaMagic, FaClock
 } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
@@ -13,7 +13,7 @@ import {
   fetchAttendance, fetchSessionStats, adminMarkAttendance, 
   adminDemarkAttendance, exportAttendance 
 } from '../services/attendanceService';
-import { fetchEventSessions } from '../services/adminService';
+import { fetchEventSessions, updateEventSession } from '../services/adminService';
 import { createHighlight, updateHighlight, deleteHighlight, generateHighlightDescription } from '../services/highlightService';
 import { useToast } from '../context/ToastContext';
 import { DEPARTMENTS } from '../constants';
@@ -46,6 +46,40 @@ export default function AdminAttendance() {
   const [markingPrn, setMarkingPrn] = useState('');
   const [markingSessionId, setMarkingSessionId] = useState('');
   const [isMarking, setIsMarking] = useState(false);
+
+  // --- Attendance Time Limit Modal State ---
+  const [timeLimitModalOpen, setTimeLimitModalOpen] = useState(false);
+  const [editLimitMinutes, setEditLimitMinutes] = useState(60);
+  const [updatingLimit, setUpdatingLimit] = useState(false);
+
+  const handleOpenEditTimeLimit = () => {
+    if (!sessionData?.session) return;
+    setEditLimitMinutes(sessionData.session.duration_minutes || 60);
+    setTimeLimitModalOpen(true);
+  };
+
+  const handleSaveTimeLimit = async () => {
+    if (!sessionData?.session) return;
+    const finalMinutes = parseInt(editLimitMinutes, 10);
+    if (isNaN(finalMinutes) || finalMinutes < 5) {
+      toast.error("Please enter a valid attendance time limit of at least 5 minutes.");
+      return;
+    }
+
+    try {
+      setUpdatingLimit(true);
+      await updateEventSession(sessionData.session.id, { duration_minutes: finalMinutes });
+      toast.success(`Attendance time limit updated to ${finalMinutes} mins!`);
+      setTimeLimitModalOpen(false);
+      loadSessionStats();
+      const res = await fetchEventSessions();
+      setSessionsList(res.sessions || []);
+    } catch (err) {
+      toast.error(err.message || "Failed to update attendance time limit.");
+    } finally {
+      setUpdatingLimit(false);
+    }
+  };
 
   // --- Highlight Modal / Form state ---
   const [highlightModalOpen, setHighlightModalOpen] = useState(false);
@@ -445,18 +479,30 @@ export default function AdminAttendance() {
                       <FaMapMarkerAlt className="text-primary-500" /> Location: {sessionData.session.location}
                     </span>
                   )}
-                  <span>
-                    Start: {new Date(sessionData.session.start_time).toLocaleString()} ({sessionData.session.duration_minutes} mins)
+                  <span className="flex items-center gap-1.5 bg-slate-100 px-2.5 py-1 rounded-md font-semibold text-slate-700">
+                    <FaClock className="text-primary-600" />
+                    <span>Attendance Time Limit: <strong className="text-slate-900">{sessionData.session.duration_minutes} Mins</strong></span>
                   </span>
                 </div>
               </div>
 
-              {sessionData.highlights && sessionData.highlights.length > 0 && (
-                <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-lg text-amber-800 text-xs font-semibold">
-                  <FaStar className="text-amber-500" />
-                  <span>{sessionData.highlights.length} Highlight(s) Attached</span>
-                </div>
-              )}
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleOpenEditTimeLimit}
+                  className="bg-primary-600 hover:bg-primary-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 shadow-sm transition"
+                  title="Change how many minutes attendance is active for students"
+                >
+                  <FaClock /> <span>Edit Time Limit</span>
+                </button>
+
+                {sessionData.highlights && sessionData.highlights.length > 0 && (
+                  <div className="flex items-center gap-2 bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-lg text-amber-800 text-xs font-semibold">
+                    <FaStar className="text-amber-500" />
+                    <span>{sessionData.highlights.length} Highlight(s)</span>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
@@ -1103,6 +1149,110 @@ export default function AdminAttendance() {
             </button>
           </div>
         </form>
+      </Modal>
+
+      {/* DEDICATED ATTENDANCE TIME LIMIT EDIT MODAL */}
+      <Modal
+        open={timeLimitModalOpen}
+        onClose={() => setTimeLimitModalOpen(false)}
+        title="Edit Attendance Time Limit"
+      >
+        {sessionData?.session && (
+          <div className="space-y-4">
+            <div className="bg-slate-50 p-3 rounded-lg border border-slate-200">
+              <h4 className="font-bold text-slate-800 text-sm">{sessionData.session.title}</h4>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Session Start: <span className="font-semibold text-slate-700">{new Date(sessionData.session.start_time).toLocaleString()}</span>
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1">
+                Attendance System Active Limit (Minutes)
+              </label>
+              <p className="text-xs text-slate-500 mb-2">
+                Set how long attendance stays open for students from start time (e.g. 10 mins, 15 mins).
+              </p>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setEditLimitMinutes((prev) => Math.max(5, parseInt(prev || 0) - 10))}
+                  className="px-3 py-2 bg-rose-100 text-rose-800 hover:bg-rose-200 font-bold text-xs rounded-lg transition shrink-0"
+                >
+                  -10m
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditLimitMinutes((prev) => Math.max(5, parseInt(prev || 0) - 5))}
+                  className="px-3 py-2 bg-rose-100 text-rose-800 hover:bg-rose-200 font-bold text-xs rounded-lg transition shrink-0"
+                >
+                  -5m
+                </button>
+                <input
+                  type="number"
+                  min="5"
+                  value={editLimitMinutes}
+                  onChange={(e) => setEditLimitMinutes(e.target.value)}
+                  className="input-field text-center font-bold text-base !py-2 min-w-[70px]"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setEditLimitMinutes((prev) => parseInt(prev || 0) + 5)}
+                  className="px-3 py-2 bg-emerald-100 text-emerald-800 hover:bg-emerald-200 font-bold text-xs rounded-lg transition shrink-0"
+                >
+                  +5m
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditLimitMinutes((prev) => parseInt(prev || 0) + 10)}
+                  className="px-3 py-2 bg-emerald-100 text-emerald-800 hover:bg-emerald-200 font-bold text-xs rounded-lg transition shrink-0"
+                >
+                  +10m
+                </button>
+              </div>
+            </div>
+
+            {/* Quick Presets */}
+            <div>
+              <span className="text-xs font-semibold text-slate-500 block mb-1.5">Quick Presets:</span>
+              <div className="flex flex-wrap gap-2">
+                {[10, 15, 20, 30, 45, 60].map((mins) => (
+                  <button
+                    key={mins}
+                    type="button"
+                    onClick={() => setEditLimitMinutes(mins)}
+                    className={`px-3 py-1 rounded-lg text-xs font-bold transition ${
+                      parseInt(editLimitMinutes) === mins
+                        ? "bg-primary-600 text-white shadow-sm"
+                        : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                    }`}
+                  >
+                    {mins} Mins
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setTimeLimitModalOpen(false)}
+                className="btn-secondary !px-4 !py-2 text-xs"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveTimeLimit}
+                disabled={updatingLimit}
+                className="btn-primary !px-5 !py-2 text-xs"
+              >
+                {updatingLimit ? "Updating..." : "Save Time Limit"}
+              </button>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );
