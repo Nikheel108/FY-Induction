@@ -64,6 +64,7 @@ def logout():
 
     Tokens are stateless so there is nothing to revoke server-side; the client
     simply discards the token. This endpoint exists for a clean client flow.
+    """
     return jsonify({"success": True, "message": "Logged out successfully."})
 
 
