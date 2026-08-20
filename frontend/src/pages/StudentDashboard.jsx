@@ -25,7 +25,9 @@ import {
   FaPhoneAlt,
   FaPaperPlane,
   FaUser,
-  FaHeadset
+  FaHeadset,
+  FaBars,
+  FaTimes
 } from "react-icons/fa";
 import { useToast } from "../context/ToastContext";
 import { getSchedule } from "../services/studentAuthService";
@@ -74,6 +76,7 @@ export default function StudentDashboard() {
   const [markingAttendance, setMarkingAttendance] = useState(false);
   const [downloadingReceipt, setDownloadingReceipt] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Contact query form state
   const [contactForm, setContactForm] = useState({ name: "", prn: "", email: "", description: "" });
@@ -287,22 +290,22 @@ export default function StudentDashboard() {
     <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col">
       {/* BRAND HEADER & NAVBAR */}
       <header className="bg-white shadow-sm border-b border-slate-200 sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-4 py-2.5 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 py-2.5 flex items-center justify-between gap-2">
           {/* MIT AOE Logo & Full Name ALWAYS beside Logo */}
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => setActiveView("home")}>
+          <div className="flex items-center gap-2 sm:gap-3 cursor-pointer min-w-0" onClick={() => setActiveView("home")}>
             <img
               src={mitLogo}
               alt="MIT AOE Logo"
-              className="h-10 w-auto object-contain"
+              className="h-8 sm:h-10 w-auto object-contain shrink-0"
             />
-            <div className="border-l border-slate-300 pl-3">
-              <h1 className="text-base font-black text-slate-900 leading-none">MIT Academy of Engineering</h1>
-              <p className="text-[11px] font-semibold text-primary-700 mt-0.5">Alandi, Pune | Induction 2026-27</p>
+            <div className="border-l border-slate-300 pl-2 sm:pl-3 min-w-0">
+              <h1 className="text-xs sm:text-base font-black text-slate-900 leading-tight truncate">MIT Academy of Engineering</h1>
+              <p className="text-[10px] sm:text-[11px] font-semibold text-primary-700 leading-none mt-0.5 truncate">Alandi, Pune | Induction 2026-27</p>
             </div>
           </div>
 
-          {/* Top Navigation Bar: Home, Schedule, Contact Us, Receipt, Profile Dropdown */}
-          <div className="flex items-center gap-1.5 sm:gap-3">
+          {/* Desktop Navigation Links */}
+          <div className="hidden md:flex items-center gap-2 lg:gap-3">
             <button
               onClick={() => setActiveView("home")}
               className={`text-xs sm:text-sm font-bold flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition ${
@@ -312,7 +315,7 @@ export default function StudentDashboard() {
               }`}
             >
               <FaHome className="text-primary-600" />
-              <span className="hidden sm:inline">Home</span>
+              <span>Home</span>
             </button>
 
             <button
@@ -339,18 +342,6 @@ export default function StudentDashboard() {
               <span>Contact Us</span>
             </button>
 
-            {/* <button
-              onClick={() => setActiveView("profile")}
-              className={`text-xs sm:text-sm font-bold flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition ${
-                activeView === "profile"
-                  ? "bg-primary-50 text-primary-700"
-                  : "text-slate-700 hover:text-primary-700 hover:bg-slate-100"
-              }`}
-            >
-              <FaUserCircle className="text-primary-600" />
-              <span className="hidden sm:inline">My Profile</span>
-            </button> */}
-
             <button
               onClick={handleDownloadReceipt}
               disabled={downloadingReceipt}
@@ -358,10 +349,10 @@ export default function StudentDashboard() {
               title="Download Registration Receipt"
             >
               <FaFileDownload className="text-amber-700" />
-              <span className="hidden sm:inline">{downloadingReceipt ? "Downloading..." : "Receipt"}</span>
+              <span>{downloadingReceipt ? "Downloading..." : "Receipt"}</span>
             </button>
 
-            {/* PROFILE IMAGE AVATAR & DROPDOWN */}
+            {/* PROFILE IMAGE AVATAR & DROPDOWN (Desktop) */}
             <div className="relative" ref={dropdownRef}>
               <button
                 onClick={() => setProfileDropdownOpen((prev) => !prev)}
@@ -447,7 +438,120 @@ export default function StudentDashboard() {
               </AnimatePresence>
             </div>
           </div>
+
+          {/* Mobile Right Controls: Avatar + Hamburger Menu */}
+          <div className="flex md:hidden items-center gap-2">
+            <button
+              onClick={() => setActiveView("profile")}
+              className="p-0.5 rounded-full border border-slate-300 shrink-0"
+              title="My Profile"
+            >
+              {student.photo_base64 ? (
+                <img
+                  src={student.photo_base64}
+                  alt={student.full_name}
+                  className="w-8 h-8 rounded-full object-cover border-2 border-primary-600"
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-primary-700 text-white flex items-center justify-center font-bold text-xs">
+                  {student.full_name ? student.full_name.charAt(0).toUpperCase() : "S"}
+                </div>
+              )}
+            </button>
+
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="p-2 text-slate-700 hover:text-primary-700 bg-slate-100 hover:bg-slate-200 rounded-lg text-lg transition"
+              aria-label="Toggle Mobile Menu"
+            >
+              {mobileMenuOpen ? <FaTimes /> : <FaBars />}
+            </button>
+          </div>
         </div>
+
+        {/* MOBILE NAVIGATION DRAWER */}
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <motion.nav
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.25 }}
+              className="md:hidden bg-white border-t border-slate-200 shadow-xl overflow-hidden px-4 py-3 space-y-2"
+            >
+              <button
+                onClick={() => {
+                  setActiveView("home");
+                  setMobileMenuOpen(false);
+                }}
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-bold text-sm transition ${
+                  activeView === "home" ? "bg-primary-50 text-primary-700" : "text-slate-700 hover:bg-slate-50"
+                }`}
+              >
+                <FaHome className="text-primary-600 text-base" /> Home Dashboard
+              </button>
+
+              <button
+                onClick={() => {
+                  setActiveView("schedule");
+                  setMobileMenuOpen(false);
+                }}
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-bold text-sm transition ${
+                  activeView === "schedule" ? "bg-primary-50 text-primary-700" : "text-slate-700 hover:bg-slate-50"
+                }`}
+              >
+                <FaCalendarAlt className="text-primary-600 text-base" /> Full Schedule
+              </button>
+
+              <button
+                onClick={() => {
+                  setActiveView("contact");
+                  setMobileMenuOpen(false);
+                }}
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-bold text-sm transition ${
+                  activeView === "contact" ? "bg-primary-50 text-primary-700" : "text-slate-700 hover:bg-slate-50"
+                }`}
+              >
+                <FaEnvelope className="text-primary-600 text-base" /> Contact & Support
+              </button>
+
+              <button
+                onClick={() => {
+                  setActiveView("profile");
+                  setMobileMenuOpen(false);
+                }}
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-bold text-sm transition ${
+                  activeView === "profile" ? "bg-primary-50 text-primary-700" : "text-slate-700 hover:bg-slate-50"
+                }`}
+              >
+                <FaUserCircle className="text-primary-600 text-base" /> My Profile
+              </button>
+
+              <button
+                onClick={() => {
+                  handleDownloadReceipt();
+                  setMobileMenuOpen(false);
+                }}
+                disabled={downloadingReceipt}
+                className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-bold text-sm text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-200 transition"
+              >
+                <span className="flex items-center gap-3">
+                  <FaFileDownload className="text-amber-700 text-base" /> Download Receipt
+                </span>
+                <span className="text-xs bg-amber-200 text-amber-900 font-black px-2 py-0.5 rounded">PDF</span>
+              </button>
+
+              <div className="pt-2 border-t border-slate-100">
+                <button
+                  onClick={handleLogout}
+                  className="w-full flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl font-bold text-sm text-rose-600 bg-rose-50 hover:bg-rose-100 transition"
+                >
+                  <FaSignOutAlt /> Logout
+                </button>
+              </div>
+            </motion.nav>
+          )}
+        </AnimatePresence>
       </header>
 
       {/* MAIN CONTENT AREA */}
