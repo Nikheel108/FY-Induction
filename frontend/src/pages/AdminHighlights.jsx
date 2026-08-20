@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { FaPlus, FaTrash, FaImage, FaDownload, FaMagic } from "react-icons/fa";
 import Sidebar from "../components/Sidebar";
 import { useToast } from "../context/ToastContext";

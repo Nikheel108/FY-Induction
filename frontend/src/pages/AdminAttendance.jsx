@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   FaUsers, FaCheckCircle, FaTimesCircle, FaStar, FaFilter, FaSearch, 
   FaDownload, FaFileExcel, FaPlus, FaTrash, FaEdit, FaCheck, FaImage, 

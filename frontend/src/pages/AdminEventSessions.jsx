@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { FaPlus, FaCalendarAlt, FaTrash, FaUserTie, FaMapMarkerAlt, FaEdit, FaTimes, FaFilter } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import { FaHome } from "react-icons/fa";

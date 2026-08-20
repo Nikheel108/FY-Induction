@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
 import {
   FaMapMarkerAlt,
   FaPhoneAlt,
@@ -75,7 +76,12 @@ export default function Contact() {
     <div className="flex min-h-screen flex-col bg-slate-50">
       <Navbar />
 
-      <main className="flex-1 w-full max-w-6xl mx-auto px-4 py-8 sm:py-12 animate-fade-up">
+      <motion.main
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="flex-1 w-full max-w-6xl mx-auto px-4 py-8 sm:py-12"
+      >
         {/* Header */}
         <div className="text-center max-w-2xl mx-auto mb-10">
           <div className="mx-auto mb-3 grid h-14 w-14 place-items-center rounded-2xl bg-primary-100 text-primary-700 shadow-inner">
@@ -277,7 +283,7 @@ export default function Contact() {
             </div>
           </div>
         </div>
-      </main>
+      </motion.main>
 
       <Footer />
     </div>

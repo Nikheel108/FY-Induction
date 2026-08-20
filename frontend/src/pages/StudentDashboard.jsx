@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   FaUserCircle,
   FaFileDownload,
@@ -382,60 +383,68 @@ export default function StudentDashboard() {
               </button>
 
               {/* DROPDOWN MENU */}
-              {profileDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-slate-200 py-3 px-4 z-50 animate-fade-in space-y-3">
-                  <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
-                    {student.photo_base64 ? (
-                      <img
-                        src={student.photo_base64}
-                        alt={student.full_name}
-                        className="w-12 h-12 rounded-full object-cover border-2 border-primary-600 shadow-md"
-                      />
-                    ) : (
-                      <div className="w-12 h-12 rounded-full bg-primary-700 text-white flex items-center justify-center font-bold text-lg shadow-md">
-                        {student.full_name ? student.full_name.charAt(0).toUpperCase() : "S"}
+              <AnimatePresence>
+                {profileDropdownOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -8, scale: 0.95 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-slate-200 py-3 px-4 z-50 space-y-3"
+                  >
+                    <div className="flex items-center gap-3 border-b border-slate-100 pb-3">
+                      {student.photo_base64 ? (
+                        <img
+                          src={student.photo_base64}
+                          alt={student.full_name}
+                          className="w-12 h-12 rounded-full object-cover border-2 border-primary-600 shadow-md"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 rounded-full bg-primary-700 text-white flex items-center justify-center font-bold text-lg shadow-md">
+                          {student.full_name ? student.full_name.charAt(0).toUpperCase() : "S"}
+                        </div>
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className="font-bold text-sm text-slate-900 truncate">{student.full_name}</p>
+                        <p className="text-xs text-slate-400 truncate">{student.student_email}</p>
                       </div>
-                    )}
-                    <div className="min-w-0 flex-1">
-                      <p className="font-bold text-sm text-slate-900 truncate">{student.full_name}</p>
-                      <p className="text-xs text-slate-400 truncate">{student.student_email}</p>
                     </div>
-                  </div>
 
-                  <div className="space-y-2 text-xs">
-                    <div className="flex justify-between items-center bg-slate-50 p-2 rounded-lg border border-slate-100">
-                      <span className="text-slate-500 font-semibold">Reg No:</span>
-                      <span className="font-mono font-bold text-primary-700">{student.registration_id || "—"}</span>
+                    <div className="space-y-2 text-xs">
+                      <div className="flex justify-between items-center bg-slate-50 p-2 rounded-lg border border-slate-100">
+                        <span className="text-slate-500 font-semibold">Reg No:</span>
+                        <span className="font-mono font-bold text-primary-700">{student.registration_id || "—"}</span>
+                      </div>
+                      <div className="flex justify-between items-center bg-slate-50 p-2 rounded-lg border border-slate-100">
+                        <span className="text-slate-500 font-semibold">PRN:</span>
+                        <span className="font-mono font-bold text-slate-800">{student.prn}</span>
+                      </div>
+                      <div className="flex justify-between items-start bg-slate-50 p-2 rounded-lg border border-slate-100">
+                        <span className="text-slate-500 font-semibold whitespace-nowrap">Department:</span>
+                        <span className="font-medium text-slate-800 text-right line-clamp-2">{student.department}</span>
+                      </div>
                     </div>
-                    <div className="flex justify-between items-center bg-slate-50 p-2 rounded-lg border border-slate-100">
-                      <span className="text-slate-500 font-semibold">PRN:</span>
-                      <span className="font-mono font-bold text-slate-800">{student.prn}</span>
-                    </div>
-                    <div className="flex justify-between items-start bg-slate-50 p-2 rounded-lg border border-slate-100">
-                      <span className="text-slate-500 font-semibold whitespace-nowrap">Department:</span>
-                      <span className="font-medium text-slate-800 text-right line-clamp-2">{student.department}</span>
-                    </div>
-                  </div>
 
-                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-                    <button
-                      onClick={() => {
-                        setActiveView("profile");
-                        setProfileDropdownOpen(false);
-                      }}
-                      className="text-xs text-primary-700 hover:underline font-bold"
-                    >
-                      View Full Profile
-                    </button>
-                    <button
-                      onClick={handleLogout}
-                      className="text-xs text-rose-600 hover:text-rose-700 font-bold flex items-center gap-1 bg-rose-50 hover:bg-rose-100 px-3 py-1.5 rounded-lg transition"
-                    >
-                      <FaSignOutAlt /> Logout
-                    </button>
-                  </div>
-                </div>
-              )}
+                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                      <button
+                        onClick={() => {
+                          setActiveView("profile");
+                          setProfileDropdownOpen(false);
+                        }}
+                        className="text-xs text-primary-700 hover:underline font-bold"
+                      >
+                        View Full Profile
+                      </button>
+                      <button
+                        onClick={handleLogout}
+                        className="text-xs text-rose-600 hover:text-rose-700 font-bold flex items-center gap-1 bg-rose-50 hover:bg-rose-100 px-3 py-1.5 rounded-lg transition"
+                      >
+                        <FaSignOutAlt /> Logout
+                      </button>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
         </div>
