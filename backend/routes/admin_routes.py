@@ -370,3 +370,12 @@ def delete_contact_query(query_id):
     return jsonify({"success": True, "message": "Query deleted successfully."})
 
 
+@admin_bp.route("/highlights/generate-description", methods=["POST", "OPTIONS"])
+def admin_generate_highlight_description():
+    """Generate a ~60 word event description using Gemini API with intelligent fallback."""
+    if request.method == "OPTIONS":
+        return jsonify({"success": True}), 200
+    from routes.highlight_routes import generate_highlight_description
+    return generate_highlight_description()
+
+

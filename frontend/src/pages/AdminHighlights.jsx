@@ -1,8 +1,8 @@
 import { useEffect, useState, useRef, useMemo } from "react";
-import { FaPlus, FaTrash, FaImage, FaDownload } from "react-icons/fa";
+import { FaPlus, FaTrash, FaImage, FaDownload, FaMagic } from "react-icons/fa";
 import Sidebar from "../components/Sidebar";
 import { useToast } from "../context/ToastContext";
-import { getHighlights, createHighlight, deleteHighlight, exportHighlightsPDF } from "../services/highlightService";
+import { getHighlights, createHighlight, deleteHighlight, exportHighlightsPDF, generateHighlightDescription } from "../services/highlightService";
 import { Link } from "react-router-dom";
 import { FaHome } from "react-icons/fa";
 
@@ -11,6 +11,7 @@ export default function AdminHighlights() {
   const [highlights, setHighlights] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [generatingAI, setGeneratingAI] = useState(false);
   const fileInputRef = useRef(null);
   const toast = useToast();
 
@@ -22,6 +23,30 @@ export default function AdminHighlights() {
   });
   const [imagePreview, setImagePreview] = useState(null);
   const [selectedSpeaker, setSelectedSpeaker] = useState("");
+
+  const handleGenerateAIDescription = async () => {
+    if (!formData.title) {
+      toast.error("Please enter a Title first to generate AI description.");
+      return;
+    }
+    setGeneratingAI(true);
+    try {
+      toast.info("Generating description via Gemini AI...");
+      const res = await generateHighlightDescription({
+        title: formData.title,
+        resource_speaker: formData.resource_speaker,
+        notes: formData.description,
+      });
+      if (res.success && res.description) {
+        setFormData((prev) => ({ ...prev, description: res.description }));
+        toast.success("AI description generated!");
+      }
+    } catch (err) {
+      toast.error(err.message || "Failed to generate description.");
+    } finally {
+      setGeneratingAI(false);
+    }
+  };
 
   const uniqueSpeakers = useMemo(() => {
     const speakers = new Set();
@@ -233,13 +258,25 @@ export default function AdminHighlights() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700">Description</label>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className="block text-sm font-semibold text-slate-700">Description</label>
+                    <button
+                      type="button"
+                      onClick={handleGenerateAIDescription}
+                      disabled={generatingAI}
+                      className="text-xs bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white font-bold px-2.5 py-1 rounded-md shadow-sm flex items-center gap-1 transition"
+                      title="Generate ~60-word description using Gemini AI"
+                    >
+                      <FaMagic className="text-[10px]" />
+                      {generatingAI ? "Generating..." : "✨ AI Generate"}
+                    </button>
+                  </div>
                   <textarea
                     name="description"
                     rows="3"
                     value={formData.description}
                     onChange={handleChange}
-                    placeholder="Describe the highlight..."
+                    placeholder="Enter description or click ✨ AI Generate to auto-synthesize with Gemini..."
                     className="input-field mt-1 resize-y"
                     required
                   ></textarea>

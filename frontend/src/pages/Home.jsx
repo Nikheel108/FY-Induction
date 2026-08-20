@@ -15,6 +15,12 @@ import Footer from "../components/Footer";
 import Navbar from "../components/Navbar";
 import { getStatistics } from "../services/studentService";
 
+import campusImg1 from "../assets/mit-academy-of-engineering-pune-363211.png";
+import campusImg2 from "../assets/mit-academy-of-engineering-pune-363213.png";
+import campusImg3 from "../assets/595daf32-dda6-4630-8acf-3b202d71bc02.png";
+
+const HERO_SLIDES = [campusImg1, campusImg2, campusImg3];
+
 const FEATURES = [
   {
     icon: FaUserCheck,
@@ -44,6 +50,7 @@ const FEATURES = [
 export default function Home() {
   const [stats, setStats] = useState(null);
   const [showSplash, setShowSplash] = useState(true);
+  const [currentHeroSlide, setCurrentHeroSlide] = useState(0);
 
   // Generate some random stars for the background
   const [stars] = useState(() => {
@@ -61,6 +68,14 @@ export default function Home() {
   useEffect(() => {
     const timer = setTimeout(() => setShowSplash(false), 5000);
     return () => clearTimeout(timer);
+  }, []);
+
+  // Auto-slide hero background images every 4.5 seconds
+  useEffect(() => {
+    const slideInterval = setInterval(() => {
+      setCurrentHeroSlide((prev) => (prev + 1) % HERO_SLIDES.length);
+    }, 4500);
+    return () => clearInterval(slideInterval);
   }, []);
 
   useEffect(() => {
@@ -106,44 +121,68 @@ export default function Home() {
 
       <Navbar />
 
-      {/* Hero */}
-      <section className="relative overflow-hidden bg-slate-900">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary-900 via-slate-900 to-slate-950" />
-        <div className="relative mx-auto max-w-6xl px-4 py-12 sm:py-20 text-center">
-          <p className="text-xs sm:text-sm font-semibold uppercase tracking-widest text-primary-300">
+      {/* Hero section with background sliding campus images */}
+      <section className="relative overflow-hidden bg-slate-950 min-h-[520px] flex items-center">
+        {/* Background Sliding Images with 90% Visibility */}
+        <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+          <img
+            key={currentHeroSlide}
+            src={HERO_SLIDES[currentHeroSlide]}
+            alt="MIT AOE Campus"
+            className="w-full h-full object-cover opacity-90 filter saturate-110 scale-105 transition-all duration-1000"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-slate-950/70 via-slate-950/45 to-slate-950/75"></div>
+        </div>
+
+        <div className="relative z-10 mx-auto max-w-6xl px-4 py-14 sm:py-24 text-center w-full">
+          <p className="text-xs sm:text-sm font-semibold uppercase tracking-widest text-primary-300 drop-shadow-sm">
             Academic Year 2026-27
           </p>
-          <h1 className="mx-auto mt-3 max-w-3xl text-3xl font-extrabold text-white sm:text-4xl md:text-5xl">
+          <h1 className="mx-auto mt-3 max-w-3xl text-3xl font-extrabold text-white sm:text-4xl md:text-5xl drop-shadow-md">
             Welcome to the First Year Induction Program
           </h1>
-          <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-slate-300 sm:text-lg">
+          <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-slate-200 sm:text-lg font-medium drop-shadow-sm">
             MIT Academy of Engineering welcomes its newest batch. Register for the
             induction program to receive your schedule, campus map and handbook —
             delivered straight to your inbox.
           </p>
           <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
-            <Link to="/student-login" className="btn-primary !px-8 !py-3 !text-base w-full sm:w-auto">
+            <Link to="/student-login" className="btn-primary !px-8 !py-3 !text-base w-full sm:w-auto shadow-xl transform hover:scale-105 transition">
               Register / Access Dashboard
             </Link>
           </div>
 
+          {/* Slide Indicator Dots */}
+          <div className="mt-8 flex items-center justify-center gap-2">
+            {HERO_SLIDES.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => setCurrentHeroSlide(idx)}
+                className={`h-2.5 rounded-full transition-all ${
+                  currentHeroSlide === idx ? "w-8 bg-amber-400" : "w-2.5 bg-white/40 hover:bg-white/70"
+                }`}
+                aria-label={`Go to slide ${idx + 1}`}
+              />
+            ))}
+          </div>
+
           {stats && (
-            <div className="mx-auto mt-12 grid max-w-3xl grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-4">
-              <div className="rounded-xl bg-white/10 p-4 sm:p-5 backdrop-blur shadow-lg border border-white/10 transition hover:-translate-y-1">
+            <div className="mx-auto mt-10 grid max-w-3xl grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-4">
+              <div className="rounded-xl bg-slate-900/70 p-4 sm:p-5 backdrop-blur-md shadow-xl border border-white/15 transition hover:-translate-y-1">
                 <p className="text-3xl sm:text-4xl font-extrabold text-white">{stats.total}</p>
-                <p className="mt-1 text-sm font-medium text-slate-300">Registrations</p>
+                <p className="mt-1 text-sm font-semibold text-slate-200">Registrations</p>
               </div>
-              <div className="rounded-xl bg-white/10 p-4 sm:p-5 backdrop-blur shadow-lg border border-white/10 transition hover:-translate-y-1">
+              <div className="rounded-xl bg-slate-900/70 p-4 sm:p-5 backdrop-blur-md shadow-xl border border-white/15 transition hover:-translate-y-1">
                 <p className="text-3xl sm:text-4xl font-extrabold text-white">{stats.by_department?.length ?? 0}</p>
-                <p className="mt-1 text-sm font-medium text-slate-300">Departments</p>
+                <p className="mt-1 text-sm font-semibold text-slate-200">Departments</p>
               </div>
-              <div className="rounded-xl bg-white/10 p-4 sm:p-5 backdrop-blur shadow-lg border border-white/10 transition hover:-translate-y-1">
+              <div className="rounded-xl bg-slate-900/70 p-4 sm:p-5 backdrop-blur-md shadow-xl border border-white/15 transition hover:-translate-y-1">
                 <p className="text-3xl sm:text-4xl font-extrabold text-white">{stats.total}</p>
-                <p className="mt-1 text-sm font-medium text-slate-300">Students</p>
+                <p className="mt-1 text-sm font-semibold text-slate-200">Students</p>
               </div>
-              <div className="rounded-xl bg-white/10 p-4 sm:p-5 backdrop-blur shadow-lg border border-white/10 transition hover:-translate-y-1">
+              <div className="rounded-xl bg-slate-900/70 p-4 sm:p-5 backdrop-blur-md shadow-xl border border-white/15 transition hover:-translate-y-1">
                 <p className="text-3xl sm:text-4xl font-extrabold text-white">1</p>
-                <p className="mt-1 text-sm font-medium text-slate-300">Program</p>
+                <p className="mt-1 text-sm font-semibold text-slate-200">Program</p>
               </div>
             </div>
           )}

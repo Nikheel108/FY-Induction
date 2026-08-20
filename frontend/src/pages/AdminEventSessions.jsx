@@ -163,6 +163,38 @@ export default function AdminEventSessions() {
     }
   };
 
+  const handleExtendDuration = async (session, minutesToAdd) => {
+    try {
+      const newDuration = (session.duration_minutes || 60) + minutesToAdd;
+      await updateEventSession(session.id, { duration_minutes: newDuration });
+      toast.success(`Extended session duration by +${minutesToAdd} mins (New: ${newDuration} mins)`);
+      loadSessions();
+    } catch (err) {
+      toast.error(err.message || "Failed to extend duration.");
+    }
+  };
+
+  const getSessionActiveInfo = (session) => {
+    if (!session.start_time) return { status: 'Ended', active: false, windowStr: '—' };
+    const start = new Date(session.start_time);
+    const end = new Date(start.getTime() + (session.duration_minutes + 5) * 60000); // 5m grace
+    const now = new Date();
+
+    const startStr = start.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const endStr = end.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const windowStr = `${startStr} - ${endStr}`;
+
+    if (now >= start && now <= end) {
+      const remainingMs = end - now;
+      const remainingMins = Math.ceil(remainingMs / 60000);
+      return { status: `Live Now (${remainingMins}m left)`, active: true, windowStr };
+    } else if (now < start) {
+      return { status: 'Upcoming', active: false, windowStr };
+    } else {
+      return { status: 'Ended', active: false, windowStr };
+    }
+  };
+
   return (
     <div className="flex min-h-screen bg-slate-100">
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
@@ -190,11 +222,11 @@ export default function AdminEventSessions() {
           <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <p className="mt-1 text-sm text-slate-500">
-                Create, edit, and filter time-bound attendance sessions by date.
+                Create, edit, extend live attendance windows, and filter sessions by date.
               </p>
             </div>
 
-            {/* Date Filter Dropdown for Mobile / Quick Selection */}
+            {/* Date Filter Dropdown */}
             {availableDates.length > 0 && (
               <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-slate-200 shadow-sm">
                 <FaFilter className="text-slate-400 text-xs" />
@@ -378,15 +410,17 @@ export default function AdminEventSessions() {
                   <table className="w-full text-left text-sm text-slate-600">
                     <thead className="bg-slate-50 text-xs uppercase text-slate-500 border-b border-slate-200">
                       <tr>
-                        <th className="px-4 py-3 font-semibold rounded-tl-lg">Title & Speaker</th>
-                        <th className="px-4 py-3 font-semibold">Start Time (Local)</th>
-                        <th className="px-4 py-3 font-semibold text-right">Duration</th>
-                        <th className="px-4 py-3 font-semibold text-center rounded-tr-lg">Actions</th>
+                        <th className="px-3 py-3 font-semibold rounded-tl-lg">Title & Speaker</th>
+                        <th className="px-3 py-3 font-semibold">Attendance Live Window</th>
+                        <th className="px-3 py-3 font-semibold text-center">Duration & Extend</th>
+                        <th className="px-3 py-3 font-semibold text-center rounded-tr-lg">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {displayedSessions.map((s) => {
                         const isEditingThis = editingId === s.id;
+                        const activeInfo = getSessionActiveInfo(s);
+
                         return (
                           <tr
                             key={s.id}
@@ -394,7 +428,7 @@ export default function AdminEventSessions() {
                               isEditingThis ? "bg-amber-50/60 font-semibold" : "hover:bg-slate-50"
                             }`}
                           >
-                            <td className="px-4 py-3 font-medium text-slate-800">
+                            <td className="px-3 py-3 font-medium text-slate-800">
                               <div className="flex items-center gap-2">
                                 <span>{s.title}</span>
                                 {isEditingThis && (
@@ -416,13 +450,66 @@ export default function AdminEventSessions() {
                                 )}
                               </div>
                             </td>
-                            <td className="px-4 py-3 text-slate-700">
-                              {s.start_time ? new Date(s.start_time).toLocaleString() : "—"}
+
+                            {/* Attendance Live Time Window */}
+                            <td className="px-3 py-3 text-xs">
+                              <div className="font-semibold text-slate-800">
+                                {activeInfo.windowStr}
+                              </div>
+                              <div className="mt-1">
+                                {activeInfo.active ? (
+                                  <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                    {activeInfo.status}
+                                  </span>
+                                ) : activeInfo.status === 'Upcoming' ? (
+                                  <span className="bg-blue-100 text-blue-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                                    Upcoming
+                                  </span>
+                                ) : (
+                                  <span className="bg-slate-100 text-slate-500 text-[10px] font-semibold px-2 py-0.5 rounded-full">
+                                    Ended
+                                  </span>
+                                )}
+                              </div>
                             </td>
-                            <td className="px-4 py-3 text-right font-mono font-medium">
-                              {s.duration_minutes} mins
+
+                            {/* Duration & Quick Extend Buttons */}
+                            <td className="px-3 py-3 text-center">
+                              <div className="font-mono font-bold text-xs text-slate-800">
+                                {s.duration_minutes} mins
+                              </div>
+                              <div className="flex items-center justify-center gap-1 mt-1">
+                                <span className="text-[10px] text-slate-400 font-semibold">Extend:</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleExtendDuration(s, 15)}
+                                  className="text-[10px] bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold px-1.5 py-0.5 rounded border border-emerald-200 transition"
+                                  title="Extend attendance live duration by 15 minutes"
+                                >
+                                  +15m
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleExtendDuration(s, 30)}
+                                  className="text-[10px] bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold px-1.5 py-0.5 rounded border border-emerald-200 transition"
+                                  title="Extend attendance live duration by 30 minutes"
+                                >
+                                  +30m
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleExtendDuration(s, 60)}
+                                  className="text-[10px] bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold px-1.5 py-0.5 rounded border border-emerald-200 transition"
+                                  title="Extend attendance live duration by 60 minutes"
+                                >
+                                  +60m
+                                </button>
+                              </div>
                             </td>
-                            <td className="px-4 py-3 text-center">
+
+                            {/* Actions */}
+                            <td className="px-3 py-3 text-center">
                               <div className="flex items-center justify-center gap-1">
                                 <button
                                   onClick={() => handleEdit(s)}

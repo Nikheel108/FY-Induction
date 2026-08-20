@@ -172,15 +172,20 @@ class Highlight(db.Model):
     __tablename__ = "highlights"
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    event_session_id = db.Column(db.Integer, db.ForeignKey("event_sessions.id", ondelete="SET NULL"), nullable=True, index=True)
     title = db.Column(db.String(150), nullable=False)
     resource_speaker = db.Column(db.String(150), nullable=True)
     description = db.Column(db.Text, nullable=False)
     image_base64 = db.Column(db.Text, nullable=False)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
 
+    event_session = db.relationship("EventSession", backref="highlights", lazy=True)
+
     def to_dict(self):
         return {
             "id": self.id,
+            "event_session_id": self.event_session_id,
+            "event_session_title": self.event_session.title if self.event_session else None,
             "title": self.title,
             "resource_speaker": self.resource_speaker or "-",
             "description": self.description,

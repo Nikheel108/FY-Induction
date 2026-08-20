@@ -14,12 +14,159 @@ from flask import Blueprint, jsonify, request, g, send_file
 from openpyxl import Workbook
 from sqlalchemy import or_, and_
 
-from models import Student, Session, Attendance, EventSession
+from models import Student, Session, Attendance, EventSession, ValidPRN, Highlight
 from services.database import db
 from services.utils import admin_required
 
 attendance_bp = Blueprint("attendance", __name__, url_prefix="/api")
 logger = logging.getLogger(__name__)
+
+
+# ----- Admin endpoints (protected) -----
+
+@attendance_bp.route("/admin/attendance/session-stats", methods=["GET"])
+@admin_required
+def get_session_attendance_stats():
+    """
+    Get session-wise attendance tracking, total department student count,
+    present student list, absent student list, and department summary breakdown.
+    Query params: event_session_id (optional), department (optional).
+    """
+    session_id_arg = request.args.get("event_session_id")
+    dept_arg = request.args.get("department", "").strip()
+
+    target_session = None
+    if session_id_arg:
+        try:
+            target_session = db.session.get(EventSession, int(session_id_arg))
+        except ValueError:
+            pass
+
+    if not target_session:
+        target_session = get_current_active_session()
+
+    if not target_session:
+        target_session = EventSession.query.order_by(EventSession.start_time.desc()).first()
+
+    if not target_session:
+        return jsonify({
+            "success": True,
+            "session": None,
+            "stats": {
+                "total_students": 0,
+                "present_count": 0,
+                "absent_count": 0,
+                "attendance_percentage": 0,
+                "by_department": []
+            },
+            "present_students": [],
+            "absent_students": [],
+            "highlights": []
+        })
+
+    # Master list of all students (registered + valid PRNs)
+    all_students_map = {}
+    
+    # First, valid PRNs
+    valid_prns = ValidPRN.query.all()
+    for vp in valid_prns:
+        all_students_map[vp.prn] = {
+            "prn": vp.prn,
+            "full_name": vp.expected_name or vp.prn,
+            "department": vp.expected_department or "Computer Science and Engineering (AI & ML)",
+            "student_email": "-",
+            "student_phone": "-",
+            "is_registered": False
+        }
+        
+    # Second, registered students (override/enrich)
+    students = Student.query.all()
+    for s in students:
+        all_students_map[s.prn] = {
+            "prn": s.prn,
+            "full_name": s.full_name or (all_students_map.get(s.prn, {}).get("full_name") or s.prn),
+            "department": s.department or (all_students_map.get(s.prn, {}).get("department") or "Computer Science and Engineering (AI & ML)"),
+            "student_email": s.student_email or "-",
+            "student_phone": s.student_phone or "-",
+            "is_registered": True
+        }
+
+    # Filter by department if specified
+    if dept_arg:
+        all_students_map = {prn: data for prn, data in all_students_map.items() if data["department"].lower() == dept_arg.lower()}
+
+    # Fetch attendance records for this session
+    att_records = Attendance.query.filter_by(event_session_id=target_session.id).all()
+    present_dict = {att.prn: att for att in att_records}
+
+    present_students = []
+    absent_students = []
+
+    for prn, info in all_students_map.items():
+        if prn in present_dict:
+            att = present_dict[prn]
+            present_students.append({
+                "prn": info["prn"],
+                "full_name": info["full_name"],
+                "department": info["department"],
+                "student_email": info["student_email"],
+                "student_phone": info["student_phone"],
+                "is_registered": info["is_registered"],
+                "attendance_id": att.id,
+                "status": att.status,
+                "date": att.date.isoformat(),
+                "created_at": att.created_at.isoformat() + "Z",
+                "ip": att.browser_session.ip_address if att.browser_session else "-",
+                "location": att.browser_session.location if att.browser_session else "-"
+            })
+        else:
+            absent_students.append(info)
+
+    # Department breakdown stats
+    dept_group = {}
+    for prn, info in all_students_map.items():
+        d_name = info["department"] or "Unknown"
+        if d_name not in dept_group:
+            dept_group[d_name] = {"total": 0, "present": 0, "absent": 0}
+        dept_group[d_name]["total"] += 1
+        if prn in present_dict:
+            dept_group[d_name]["present"] += 1
+        else:
+            dept_group[d_name]["absent"] += 1
+
+    by_department = []
+    for d_name, d_counts in dept_group.items():
+        pct = round((d_counts["present"] / d_counts["total"]) * 100, 1) if d_counts["total"] > 0 else 0
+        by_department.append({
+            "department": d_name,
+            "total_students": d_counts["total"],
+            "present_count": d_counts["present"],
+            "absent_count": d_counts["absent"],
+            "attendance_percentage": pct
+        })
+
+    total_studs = len(all_students_map)
+    total_pres = len(present_students)
+    total_abs = len(absent_students)
+    overall_pct = round((total_pres / total_studs) * 100, 1) if total_studs > 0 else 0
+
+    # Fetch highlights for this session
+    session_highlights = Highlight.query.filter_by(event_session_id=target_session.id).order_by(Highlight.created_at.desc()).all()
+
+    return jsonify({
+        "success": True,
+        "session": target_session.to_dict(),
+        "stats": {
+            "total_students": total_studs,
+            "present_count": total_pres,
+            "absent_count": total_abs,
+            "attendance_percentage": overall_pct,
+            "by_department": by_department
+        },
+        "present_students": present_students,
+        "absent_students": absent_students,
+        "highlights": [h.to_dict() for h in session_highlights]
+    })
 
 
 def get_location_from_ip(ip):
