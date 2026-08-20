@@ -141,14 +141,15 @@ class EventSession(db.Model):
     attendances = db.relationship("Attendance", backref="event_session", lazy=True)
 
     def to_dict(self):
-        att_limit = self.attendance_limit_minutes if self.attendance_limit_minutes is not None else self.duration_minutes
+        att_limit = self.attendance_limit_minutes if self.attendance_limit_minutes is not None else 15
+        duration = self.duration_minutes if self.duration_minutes is not None else 60
         return {
             "id": self.id,
             "title": self.title,
             "resource_speaker": self.resource_speaker or "-",
             "location": self.location or "-",
             "start_time": self.start_time.isoformat() + "Z" if self.start_time else None,
-            "duration_minutes": self.duration_minutes,
+            "duration_minutes": duration,
             "attendance_limit_minutes": att_limit,
             "created_at": self.created_at.isoformat() + "Z" if self.created_at else None,
         }

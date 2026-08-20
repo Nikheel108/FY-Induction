@@ -353,7 +353,7 @@ def get_active_session():
     sessions = EventSession.query.filter(EventSession.start_time <= now).order_by(EventSession.start_time.desc()).limit(5).all()
     
     for s in sessions:
-        att_limit = s.attendance_limit_minutes if s.attendance_limit_minutes is not None else s.duration_minutes
+        att_limit = s.attendance_limit_minutes if s.attendance_limit_minutes is not None else 15
         end_time = s.start_time + timedelta(minutes=att_limit + 5)
         if now <= end_time:
             return jsonify({"success": True, "active_session": s.to_dict()})
@@ -366,7 +366,7 @@ def get_current_active_session():
     now = datetime.utcnow()
     sessions = EventSession.query.filter(EventSession.start_time <= now).order_by(EventSession.start_time.desc()).limit(5).all()
     for s in sessions:
-        att_limit = s.attendance_limit_minutes if s.attendance_limit_minutes is not None else s.duration_minutes
+        att_limit = s.attendance_limit_minutes if s.attendance_limit_minutes is not None else 15
         end_time = s.start_time + timedelta(minutes=att_limit + 5)
         if now <= end_time:
             return s

@@ -47,14 +47,18 @@ export default function AdminAttendance() {
   const [markingSessionId, setMarkingSessionId] = useState('');
   const [isMarking, setIsMarking] = useState(false);
 
-  // --- Attendance Time Limit Modal State ---
+  // --- Attendance Time Limit & Session Duration Modal State ---
   const [timeLimitModalOpen, setTimeLimitModalOpen] = useState(false);
   const [editLimitMinutes, setEditLimitMinutes] = useState(15);
   const [updatingLimit, setUpdatingLimit] = useState(false);
 
+  const [durationModalOpen, setDurationModalOpen] = useState(false);
+  const [editDurationMinutes, setEditDurationMinutes] = useState(60);
+  const [updatingDuration, setUpdatingDuration] = useState(false);
+
   const handleOpenEditTimeLimit = () => {
     if (!sessionData?.session) return;
-    const currentLimit = sessionData.session.attendance_limit_minutes ?? sessionData.session.duration_minutes ?? 15;
+    const currentLimit = sessionData.session.attendance_limit_minutes ?? 15;
     setEditLimitMinutes(currentLimit);
     setTimeLimitModalOpen(true);
   };
@@ -70,7 +74,7 @@ export default function AdminAttendance() {
     try {
       setUpdatingLimit(true);
       await updateEventSession(sessionData.session.id, { attendance_limit_minutes: finalMinutes });
-      toast.success(`Attendance active limit updated to ${finalMinutes} mins!`);
+      toast.success(`Attendance active limit updated for "${sessionData.session.title}" to ${finalMinutes} mins!`);
       setTimeLimitModalOpen(false);
       loadSessionStats();
       const res = await fetchEventSessions();
@@ -79,6 +83,36 @@ export default function AdminAttendance() {
       toast.error(err.message || "Failed to update attendance time limit.");
     } finally {
       setUpdatingLimit(false);
+    }
+  };
+
+  const handleOpenEditDuration = () => {
+    if (!sessionData?.session) return;
+    const currentDuration = sessionData.session.duration_minutes ?? 60;
+    setEditDurationMinutes(currentDuration);
+    setDurationModalOpen(true);
+  };
+
+  const handleSaveDuration = async () => {
+    if (!sessionData?.session) return;
+    const finalMinutes = parseInt(editDurationMinutes, 10);
+    if (isNaN(finalMinutes) || finalMinutes < 1) {
+      toast.error("Please enter a valid session duration.");
+      return;
+    }
+
+    try {
+      setUpdatingDuration(true);
+      await updateEventSession(sessionData.session.id, { duration_minutes: finalMinutes });
+      toast.success(`Session duration updated for "${sessionData.session.title}" to ${finalMinutes} mins!`);
+      setDurationModalOpen(false);
+      loadSessionStats();
+      const res = await fetchEventSessions();
+      setSessionsList(res.sessions || []);
+    } catch (err) {
+      toast.error(err.message || "Failed to update session duration.");
+    } finally {
+      setUpdatingDuration(false);
     }
   };
 
@@ -480,21 +514,37 @@ export default function AdminAttendance() {
                       <FaMapMarkerAlt className="text-primary-500" /> Location: {sessionData.session.location}
                     </span>
                   )}
-                  <span className="flex items-center gap-1.5 bg-slate-100 px-2.5 py-1 rounded-md font-semibold text-slate-700">
-                    <FaClock className="text-primary-600" />
-                    <span>Attendance Active Limit: <strong className="text-slate-900">{sessionData.session.attendance_limit_minutes ?? sessionData.session.duration_minutes ?? 15} Mins</strong></span>
+                  {/* Session Total Duration Badge */}
+                  <span className="flex items-center gap-1.5 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded-md font-semibold text-blue-900">
+                    <FaCalendarAlt className="text-blue-600" />
+                    <span>Session Duration: <strong>{sessionData.session.duration_minutes || 60} Mins</strong></span>
+                  </span>
+
+                  {/* Attendance Active Limit Badge */}
+                  <span className="flex items-center gap-1.5 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-md font-semibold text-emerald-900">
+                    <FaClock className="text-emerald-600" />
+                    <span>Attendance Active Limit: <strong>{sessionData.session.attendance_limit_minutes || 15} Mins</strong></span>
                   </span>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleOpenEditDuration}
+                  className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 shadow-sm transition"
+                  title="Edit Total Event Presentation Duration"
+                >
+                  <FaCalendarAlt /> <span>Edit Duration</span>
+                </button>
+
                 <button
                   type="button"
                   onClick={handleOpenEditTimeLimit}
-                  className="bg-primary-600 hover:bg-primary-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 shadow-sm transition"
-                  title="Change how many minutes attendance is active for students"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 shadow-sm transition"
+                  title="Edit Attendance Active System Window"
                 >
-                  <FaClock /> <span>Edit Time Limit</span>
+                  <FaClock /> <span>Edit Attendance Limit</span>
                 </button>
 
                 {sessionData.highlights && sessionData.highlights.length > 0 && (
@@ -1234,6 +1284,101 @@ export default function AdminAttendance() {
                 className="btn-primary !px-5 !py-2 text-xs"
               >
                 {updatingLimit ? "Updating..." : "Save Time Limit"}
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* DEDICATED SESSION DURATION EDIT MODAL */}
+      <Modal
+        open={durationModalOpen}
+        onClose={() => setDurationModalOpen(false)}
+        title="Edit Session Presentation Duration"
+      >
+        {sessionData?.session && (
+          <div className="space-y-4">
+            <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
+              <h4 className="font-bold text-slate-800 text-sm">{sessionData.session.title}</h4>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Session Start: <span className="font-semibold text-slate-700">{new Date(sessionData.session.start_time).toLocaleString()}</span>
+              </p>
+              <p className="text-xs text-blue-700 font-semibold mt-0.5">
+                Current Session Duration: <strong>{sessionData.session.duration_minutes || 60} Mins</strong>
+              </p>
+            </div>
+
+            {/* Quick Increase Options (Duration) */}
+            <div>
+              <label className="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">
+                Quick Adjust Duration
+              </label>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditDurationMinutes(30)}
+                  className="px-3 py-1.5 bg-blue-50 text-blue-800 hover:bg-blue-100 font-extrabold text-xs rounded-lg border border-blue-300 shadow-sm transition"
+                >
+                  30 Mins
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditDurationMinutes(60)}
+                  className="px-3 py-1.5 bg-blue-50 text-blue-800 hover:bg-blue-100 font-extrabold text-xs rounded-lg border border-blue-300 shadow-sm transition"
+                >
+                  60 Mins
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditDurationMinutes(90)}
+                  className="px-3 py-1.5 bg-blue-50 text-blue-800 hover:bg-blue-100 font-extrabold text-xs rounded-lg border border-blue-300 shadow-sm transition"
+                >
+                  90 Mins
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditDurationMinutes(120)}
+                  className="px-3 py-1.5 bg-blue-50 text-blue-800 hover:bg-blue-100 font-extrabold text-xs rounded-lg border border-blue-300 shadow-sm transition"
+                >
+                  120 Mins
+                </button>
+              </div>
+            </div>
+
+            {/* Custom Input Option */}
+            <div>
+              <label className="block text-sm font-semibold text-slate-700 mb-1">
+                Custom Session Duration (Minutes)
+              </label>
+              <p className="text-xs text-slate-500 mb-2">
+                Set total presentation/event length in minutes:
+              </p>
+              <input
+                type="number"
+                min="1"
+                value={editDurationMinutes}
+                onChange={(e) => setEditDurationMinutes(e.target.value)}
+                className="input-field text-center font-bold text-lg !py-2.5"
+                placeholder="e.g. 45, 60, 90, 120..."
+                required
+              />
+            </div>
+
+            <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => setDurationModalOpen(false)}
+                className="btn-secondary !px-4 !py-2 text-xs"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveDuration}
+                disabled={updatingDuration}
+                className="btn-primary !px-5 !py-2 text-xs bg-blue-600 hover:bg-blue-700"
+              >
+                {updatingDuration ? "Updating..." : "Save Session Duration"}
               </button>
             </div>
           </div>
