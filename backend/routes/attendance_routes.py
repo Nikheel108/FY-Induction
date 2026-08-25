@@ -356,9 +356,34 @@ def get_active_session():
         att_limit = s.attendance_limit_minutes if s.attendance_limit_minutes is not None else 15
         end_time = s.start_time + timedelta(minutes=att_limit + 5)
         if now <= end_time:
-            return jsonify({"success": True, "active_session": s.to_dict()})
+            already_marked = False
             
-    return jsonify({"success": True, "active_session": None})
+            # Check by browser session
+            if hasattr(g, 'session_obj') and g.session_obj:
+                existing = Attendance.query.filter_by(
+                    session_id=g.session_obj.id,
+                    event_session_id=s.id
+                ).first()
+                if existing:
+                    already_marked = True
+                    
+            # Check by PRN if provided
+            prn = request.args.get('prn', '').strip()
+            if prn:
+                existing_prn = Attendance.query.filter_by(
+                    prn=prn,
+                    event_session_id=s.id
+                ).first()
+                if existing_prn:
+                    already_marked = True
+                    
+            return jsonify({
+                "success": True, 
+                "active_session": s.to_dict(),
+                "already_marked": already_marked
+            })
+            
+    return jsonify({"success": True, "active_session": None, "already_marked": False})
 
 
 def get_current_active_session():

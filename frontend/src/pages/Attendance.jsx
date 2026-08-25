@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { FaClock, FaCheckCircle, FaExclamationTriangle, FaUserTie, FaMapMarkerAlt } from "react-icons/fa";
 
 import { useToast } from '../context/ToastContext';
@@ -14,6 +14,12 @@ export default function Attendance() {
   const [sessionLoading, setSessionLoading] = useState(true);
   const [timeRemaining, setTimeRemaining] = useState(null);
   const [isExpired, setIsExpired] = useState(false);
+  const [hasMarkedAttendance, setHasMarkedAttendance] = useState(false);
+  const prnRef = useRef(prn);
+  
+  useEffect(() => {
+    prnRef.current = prn;
+  }, [prn]);
   
   const toast = useToast();
 
@@ -33,10 +39,13 @@ export default function Attendance() {
   useEffect(() => {
     const fetchSession = async () => {
       try {
-        const res = await getActiveSession();
+        const res = await getActiveSession(prnRef.current);
         if (res.active_session) {
           setActiveSession(res.active_session);
           setIsExpired(false);
+          if (res.already_marked) {
+            setHasMarkedAttendance(true);
+          }
         } else {
           setActiveSession(null);
           setIsExpired(true);
@@ -91,7 +100,7 @@ export default function Attendance() {
     try {
       const res = await submitAttendance(prn.trim());
       toast.success(res.message);
-      setPrn('');
+      setHasMarkedAttendance(true);
     } catch (err) {
       toast.error(err.message);
     } finally {
@@ -148,38 +157,52 @@ export default function Attendance() {
 
             {/* Form */}
             <div className="p-6 sm:p-8">
-              <p className="text-sm text-slate-500 mb-6">
-                Enter your PRN below to mark your attendance for this session. 
-              </p>
-              
-              <form onSubmit={handleSubmit} className="space-y-5">
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700">Permanent Registration Number (PRN)</label>
-                  <input
-                    type="text"
-                    className={`input-field mt-1 text-lg py-3 ${isStudentLogged ? 'bg-slate-100' : ''}`}
-                    value={prn}
-                    onChange={(e) => setPrn(e.target.value)}
-                    placeholder="e.g. PRN260101"
-                    disabled={loading || isExpired || isStudentLogged}
-                    autoFocus={!isStudentLogged}
-                  />
-                </div>
-                
-                {isStudentLogged && (
-                  <p className="text-xs text-slate-500 font-medium">
-                    Marking attendance as <span className="font-bold text-slate-700">{prn}</span>.
+              {hasMarkedAttendance ? (
+                <div className="text-center py-6">
+                  <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-full bg-emerald-100 text-emerald-500">
+                    <FaCheckCircle className="text-3xl" />
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-800">Attendance Marked!</h3>
+                  <p className="mt-2 text-slate-500">
+                    You have successfully marked your attendance for this session.
                   </p>
-                )}
-                
-                <button
-                  type="submit"
-                  className="btn-primary w-full py-3 text-base"
-                  disabled={loading || isExpired}
-                >
-                  {loading ? 'Submitting...' : 'Mark Present'}
-                </button>
-              </form>
+                </div>
+              ) : (
+                <>
+                  <p className="text-sm text-slate-500 mb-6">
+                    Enter your PRN below to mark your attendance for this session. 
+                  </p>
+                  
+                  <form onSubmit={handleSubmit} className="space-y-5">
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700">Permanent Registration Number (PRN)</label>
+                      <input
+                        type="text"
+                        className={`input-field mt-1 text-lg py-3 ${isStudentLogged ? 'bg-slate-100' : ''}`}
+                        value={prn}
+                        onChange={(e) => setPrn(e.target.value)}
+                        placeholder="e.g. PRN260101"
+                        disabled={loading || isExpired || isStudentLogged}
+                        autoFocus={!isStudentLogged}
+                      />
+                    </div>
+                    
+                    {isStudentLogged && (
+                      <p className="text-xs text-slate-500 font-medium">
+                        Marking attendance as <span className="font-bold text-slate-700">{prn}</span>.
+                      </p>
+                    )}
+                    
+                    <button
+                      type="submit"
+                      className="btn-primary w-full py-3 text-base"
+                      disabled={loading || isExpired}
+                    >
+                      {loading ? 'Submitting...' : 'Mark Present'}
+                    </button>
+                  </form>
+                </>
+              )}
             </div>
           </div>
         )}
