@@ -7,7 +7,7 @@ registration receipt download and mail-log inspection.
 
 import logging
 
-from flask import Blueprint, current_app, jsonify, request, send_file
+from flask import Blueprint, current_app, jsonify, request, send_file, g
 from io import BytesIO
 
 from models import MailLog, Student, EventSession, ContactQuery
@@ -339,11 +339,24 @@ def get_schedule():
     Return all event sessions ordered by start time.
     """
     try:
+        prn = request.args.get('prn', '').strip()
+        marked_session_ids = []
+        
+        # Build query for attendance records using prn or browser session
+        from models import Attendance
+        if prn:
+            records = Attendance.query.filter_by(prn=prn).all()
+            marked_session_ids = [r.event_session_id for r in records if r.event_session_id]
+        elif hasattr(g, 'session_obj') and g.session_obj:
+            records = Attendance.query.filter_by(session_id=g.session_obj.id).all()
+            marked_session_ids = [r.event_session_id for r in records if r.event_session_id]
+
         sessions = EventSession.query.order_by(EventSession.start_time.asc()).all()
         return jsonify({
             "success": True,
             "message": "Schedule fetched successfully.",
             "schedule": [s.to_dict() for s in sessions],
+            "marked_session_ids": marked_session_ids
         })
     except Exception as exc:
         logger.exception("Database error while fetching schedule")

@@ -12,8 +12,11 @@ export const studentMe = () =>
 export const studentRegister = (data) =>
   api.post('/register', data).then(res => res.data);
 
-export const getSchedule = () =>
-  api.get('/schedule').then(res => res.data);
+export const getSchedule = (prn = '') => {
+  const params = new URLSearchParams();
+  if (prn) params.append('prn', prn);
+  return api.get(`/schedule?${params.toString()}`).then(res => res.data);
+};
 
 export const checkPrn = (prn) =>
   api.post('/check-prn', { prn }).then(res => res.data);

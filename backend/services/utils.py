@@ -103,6 +103,8 @@ def admin_required(fn):
     """
     @wraps(fn)
     def wrapper(*args, **kwargs):
+        if request.method == "OPTIONS":
+            return jsonify({"success": True}), 200
         auth = request.headers.get("Authorization", "")
         token = auth.removeprefix("Bearer ").strip() if auth.startswith("Bearer ") else ""
         if not token:
@@ -145,6 +147,8 @@ def student_required(fn):
     """
     @wraps(fn)
     def wrapper(*args, **kwargs):
+        if request.method == "OPTIONS":
+            return jsonify({"success": True}), 200
         auth = request.headers.get("Authorization", "")
         token = auth.removeprefix("Bearer ").strip() if auth.startswith("Bearer ") else ""
         if not token:

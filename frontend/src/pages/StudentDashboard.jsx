@@ -77,6 +77,12 @@ export default function StudentDashboard() {
   const [downloadingReceipt, setDownloadingReceipt] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [markedSessionIds, setMarkedSessionIds] = useState(new Set());
+  
+  const studentRef = useRef(student);
+  useEffect(() => {
+    studentRef.current = student;
+  }, [student]);
 
   // Contact query form state
   const [contactForm, setContactForm] = useState({ name: "", prn: "", email: "", description: "" });
@@ -145,9 +151,13 @@ export default function StudentDashboard() {
   const fetchSchedule = async () => {
     setLoadingSchedule(true);
     try {
-      const data = await getSchedule();
+      const prn = studentRef.current?.prn || '';
+      const data = await getSchedule(prn);
       if (data.success) {
         setSchedule(data.schedule || []);
+        if (data.marked_session_ids) {
+          setMarkedSessionIds(new Set(data.marked_session_ids));
+        }
       }
     } catch (error) {
       toast.error("Failed to load schedule.");
@@ -250,6 +260,7 @@ export default function StudentDashboard() {
       const res = await submitAttendance(student.prn);
       if (res.success) {
         toast.success(res.message);
+        setMarkedSessionIds((prev) => new Set(prev).add(session.id));
       }
     } catch (error) {
       toast.error(error.response?.data?.message || error.message);
@@ -678,14 +689,21 @@ export default function StudentDashboard() {
                     </div>
                   </div>
 
-                  <button
-                    onClick={() => handleMarkAttendance(activeSession)}
-                    disabled={markingAttendance}
-                    className="bg-white text-emerald-900 hover:bg-emerald-50 font-black py-3 px-6 rounded-xl shadow-lg flex items-center justify-center gap-2 text-base transition transform hover:scale-105 active:scale-95 shrink-0"
-                  >
-                    <FaCheckCircle className="text-emerald-600 text-xl" />
-                    {markingAttendance ? "Recording..." : "Mark Present Now"}
-                  </button>
+                  {markedSessionIds.has(activeSession.id) ? (
+                    <div className="bg-emerald-800/40 text-emerald-100 font-bold py-3 px-6 rounded-xl flex items-center justify-center gap-2 text-base shrink-0 border border-emerald-500/50">
+                      <FaCheckDouble className="text-xl text-emerald-400" />
+                      Attendance Marked
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => handleMarkAttendance(activeSession)}
+                      disabled={markingAttendance}
+                      className="bg-white text-emerald-900 hover:bg-emerald-50 font-black py-3 px-6 rounded-xl shadow-lg flex items-center justify-center gap-2 text-base transition transform hover:scale-105 active:scale-95 shrink-0"
+                    >
+                      <FaCheckCircle className="text-emerald-600 text-xl" />
+                      {markingAttendance ? "Recording..." : "Mark Present Now"}
+                    </button>
+                  )}
                 </div>
               );
             })()}
@@ -768,13 +786,19 @@ export default function StudentDashboard() {
 
                         {/* Mark Attendance Button: ONLY visible when attendance window is ACTIVE */}
                         {windowInfo.active ? (
-                          <button
-                            onClick={() => handleMarkAttendance(session)}
-                            disabled={markingAttendance}
-                            className="w-full btn-primary !py-2.5 bg-emerald-600 hover:bg-emerald-700 justify-center font-bold text-white shadow-md transition transform hover:scale-[1.01]"
-                          >
-                            {markingAttendance ? "Recording..." : <><FaCheckCircle className="mr-2" /> Mark Attendance Now ({windowInfo.remainingMins}m left)</>}
-                          </button>
+                          markedSessionIds.has(session.id) ? (
+                            <div className="w-full bg-emerald-50 text-emerald-700 font-bold py-2.5 rounded-lg flex justify-center items-center gap-2 border border-emerald-200">
+                              <FaCheckDouble className="text-emerald-500" /> Attendance Successfully Marked
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => handleMarkAttendance(session)}
+                              disabled={markingAttendance}
+                              className="w-full btn-primary !py-2.5 bg-emerald-600 hover:bg-emerald-700 justify-center font-bold text-white shadow-md transition transform hover:scale-[1.01]"
+                            >
+                              {markingAttendance ? "Recording..." : <><FaCheckCircle className="mr-2" /> Mark Attendance Now ({windowInfo.remainingMins}m left)</>}
+                            </button>
+                          )
                         ) : windowInfo.isExpired ? (
                           <div className="w-full bg-slate-100 text-slate-500 font-semibold py-2 px-4 rounded-lg text-xs text-center border border-slate-200">
                             🔒 Attendance time limit expired at {windowInfo.windowEndStr}. Marking is closed.

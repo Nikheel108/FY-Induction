@@ -32,7 +32,7 @@ def get_highlights():
         "highlights": [h.to_dict() for h in highlights]
     })
 
-@highlights_bp.route("/admin/highlights", methods=["POST"])
+@highlights_bp.route("/admin/highlights", methods=["POST", "OPTIONS"])
 @admin_required
 def create_highlight():
     """Admin endpoint to create a new highlight."""
@@ -62,7 +62,7 @@ def create_highlight():
         "highlight": highlight.to_dict()
     }), 201
 
-@highlights_bp.route("/admin/highlights/<int:highlight_id>", methods=["PUT"])
+@highlights_bp.route("/admin/highlights/<int:highlight_id>", methods=["PUT", "OPTIONS"])
 @admin_required
 def update_highlight(highlight_id):
     """Admin endpoint to update an existing highlight."""
@@ -89,7 +89,7 @@ def update_highlight(highlight_id):
         "highlight": highlight.to_dict()
     })
 
-@highlights_bp.route("/admin/highlights/<int:highlight_id>", methods=["DELETE"])
+@highlights_bp.route("/admin/highlights/<int:highlight_id>", methods=["DELETE", "OPTIONS"])
 @admin_required
 def delete_highlight(highlight_id):
     """Admin endpoint to delete a highlight."""
