@@ -1,4 +1,5 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 import Home from "./pages/Home";
@@ -19,10 +20,40 @@ import StudentDashboard from "./pages/StudentDashboard";
 import Contact from "./pages/Contact";
 import AdminContactQueries from "./pages/AdminContactQueries";
 
+function IframeSync() {
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Only apply this logic if embedded in an iframe
+    if (window.self !== window.top) {
+      const isInitialLoad = !window.sessionStorage.getItem('app_initialized');
+      const savedPath = window.sessionStorage.getItem('last_path');
+
+      if (isInitialLoad) {
+        window.sessionStorage.setItem('app_initialized', 'true');
+        if (savedPath && savedPath !== '/' && location.pathname === '/') {
+          navigate(savedPath, { replace: true });
+        }
+      }
+    }
+  }, [location.pathname, navigate]);
+
+  useEffect(() => {
+    if (window.self !== window.top) {
+      window.sessionStorage.setItem('last_path', location.pathname + location.search);
+    }
+  }, [location]);
+
+  return null;
+}
+
 export default function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Home />} />
+    <>
+      <IframeSync />
+      <Routes>
+        <Route path="/" element={<Home />} />
       <Route path="/register" element={<Register />} />
       <Route path="/success" element={<Success />} />
       <Route path="/admin/login" element={<AdminLogin />} />
@@ -98,5 +129,6 @@ export default function App() {
       />
       <Route path="*" element={<NotFound />} />
     </Routes>
+    </>
   );
 }
