@@ -13,6 +13,7 @@ export default function AdminHighlights() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [generatingAI, setGeneratingAI] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
   const fileInputRef = useRef(null);
   const toast = useToast();
 
@@ -123,11 +124,11 @@ export default function AdminHighlights() {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this highlight?")) return;
     try {
       await deleteHighlight(id);
       toast.success("Highlight deleted.");
       setHighlights(highlights.filter(h => h.id !== id));
+      setDeleteConfirmId(null);
     } catch (err) {
       toast.error(err.message || "Failed to delete.");
     }
@@ -317,11 +318,19 @@ export default function AdminHighlights() {
                         />
                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                           <button
-                            onClick={() => handleDelete(h.id)}
-                            className="bg-red-500 hover:bg-red-600 text-white rounded-full p-3 shadow-lg transform translate-y-4 group-hover:translate-y-0 transition-all"
+                            onClick={() => {
+                              if (deleteConfirmId === h.id) {
+                                handleDelete(h.id);
+                              } else {
+                                setDeleteConfirmId(h.id);
+                                setTimeout(() => setDeleteConfirmId(null), 3000);
+                              }
+                            }}
+                            className={`${deleteConfirmId === h.id ? 'bg-red-700 px-4' : 'bg-red-500 hover:bg-red-600 p-3'} text-white rounded-full shadow-lg transform translate-y-4 group-hover:translate-y-0 transition-all flex items-center justify-center gap-2`}
                             title="Delete"
                           >
                             <FaTrash />
+                            {deleteConfirmId === h.id && <span className="font-bold text-sm">Confirm?</span>}
                           </button>
                         </div>
                       </div>
