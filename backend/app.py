@@ -93,6 +93,24 @@ def create_app(config_class=Config):
                 db.session.commit()
             except Exception:
                 db.session.rollback()
+
+            event_session_new_cols = [
+                ("day", "VARCHAR(50)"),
+                ("date_str", "VARCHAR(50)"),
+                ("time_str", "VARCHAR(100)"),
+                ("theme", "VARCHAR(255)"),
+                ("key_topics", "TEXT"),
+                ("content_to_be_covered", "TEXT"),
+                ("student_activity", "TEXT"),
+                ("ai_tools", "TEXT"),
+                ("interaction_tools", "TEXT"),
+            ]
+            for col_name, col_type in event_session_new_cols:
+                try:
+                    db.session.execute(text(f"ALTER TABLE event_sessions ADD COLUMN {col_name} {col_type};"))
+                    db.session.commit()
+                except Exception:
+                    db.session.rollback()
                 
             # Auto-migrate highlights table
             try:

@@ -233,6 +233,262 @@ def add_session_cookie(response):
 
 # ----- Event Sessions (Admin) -----
 
+# ----- Event Sessions (Admin) -----
+
+def parse_date_cell(val):
+    import re
+    if isinstance(val, (datetime, date)):
+        return val.year, val.month, val.day
+    if not val:
+        return None
+    val_str = str(val).strip()
+    formats = [
+        "%d-%b-%Y",  # 21-Sep-2026
+        "%d-%b-%y",  # 21-Sep-26
+        "%d/%m/%Y",  # 21/09/2026
+        "%d/%m/%y",  # 21/09/26
+        "%Y-%m-%d",  # 2026-09-21
+        "%d %B %Y",  # 21 September 2026
+        "%d %b %Y",  # 21 Sep 2026
+    ]
+    for fmt in formats:
+        try:
+            dt = datetime.strptime(val_str, fmt)
+            return dt.year, dt.month, dt.day
+        except ValueError:
+            continue
+    months_map = {
+        'jan': 1, 'feb': 2, 'mar': 3, 'apr': 4, 'may': 5, 'jun': 6,
+        'jul': 7, 'aug': 8, 'sep': 9, 'oct': 10, 'nov': 11, 'dec': 12
+    }
+    m = re.match(r"(\d+)[-\s/]+([a-zA-Z]+)[-\s/]+(\d+)", val_str)
+    if m:
+        try:
+            d = int(m.group(1))
+            m_name = m.group(2).lower()[:3]
+            y = int(m.group(3))
+            if y < 100:
+                y += 2000
+            if m_name in months_map:
+                return y, months_map[m_name], d
+        except Exception:
+            pass
+    return None
+
+def parse_time_cell(time_val):
+    import re
+    if not time_val:
+        return None, None
+    time_str = str(time_val).strip()
+    parts = re.split(r"[-–to]", time_str)
+    if len(parts) < 2:
+        return None, None
+    
+    def parse_part(p):
+        p = p.strip().lower()
+        is_pm = "pm" in p
+        is_am = "am" in p
+        p = p.replace("am", "").replace("pm", "").strip()
+        p = p.replace(".", ":")
+        subparts = p.split(":")
+        h = int(subparts[0])
+        m = int(subparts[1]) if len(subparts) > 1 else 0
+        
+        if is_pm and h < 12:
+            h += 12
+        elif is_am and h == 12:
+            h = 0
+        return h, m, is_pm, is_am
+    
+    try:
+        h1, m1, pm1, am1 = parse_part(parts[0])
+        h2, m2, pm2, am2 = parse_part(parts[1])
+        
+        if not pm1 and not am1:
+            if h1 <= 7:
+                h1 += 12
+        if not pm2 and not am2:
+            if h2 <= 7:
+                h2 += 12
+                
+        if h2 < h1 and h1 < 12:
+            if h2 <= 7:
+                h2 += 12
+        
+        return (h1, m1), (h2, m2)
+    except Exception:
+        return None, None
+
+
+@attendance_bp.route("/admin/event-sessions/upload-excel", methods=["POST"])
+@admin_required
+def upload_event_sessions_excel():
+    if 'file' not in request.files:
+        return jsonify({"success": False, "message": "No file part"}), 400
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({"success": False, "message": "No selected file"}), 400
+
+    if not file.filename.endswith(('.xls', '.xlsx')):
+        return jsonify({"success": False, "message": "Unsupported file format. Please upload an Excel sheet."}), 400
+
+    try:
+        import openpyxl
+        wb = openpyxl.load_workbook(file)
+        sheet = wb.active
+
+        header_row_idx = -1
+        col_mapping = {}
+        
+        # Scan first 20 rows to find headers
+        for r_idx in range(1, 21):
+            row_vals = [cell.value for cell in sheet[r_idx]]
+            row_str_vals = [str(v).lower().strip() if v is not None else "" for v in row_vals]
+            
+            # Check if this row looks like a header (must contain at least 'time' and 'theme' or 'topic')
+            if any("time" in v for v in row_str_vals) and (any("theme" in v for v in row_str_vals) or any("topic" in v for v in row_str_vals) or any("activity" in v for v in row_str_vals)):
+                header_row_idx = r_idx
+                for c_idx, val in enumerate(row_vals):
+                    if not val:
+                        continue
+                    v_lower = str(val).lower().strip()
+                    if "day" in v_lower:
+                        col_mapping["day"] = c_idx
+                    elif "date" in v_lower:
+                        col_mapping["date"] = c_idx
+                    elif "time" in v_lower:
+                        col_mapping["time"] = c_idx
+                    elif "theme" in v_lower or "ai & professional" in v_lower or "title" in v_lower:
+                        col_mapping["theme"] = c_idx
+                    elif "key topic" in v_lower:
+                        col_mapping["key_topics"] = c_idx
+                    elif "content" in v_lower:
+                        col_mapping["content"] = c_idx
+                    elif "student activity" in v_lower or ("activity" in v_lower and "student" in v_lower):
+                        col_mapping["student_activity"] = c_idx
+                    elif "ai tool" in v_lower:
+                        col_mapping["ai_tools"] = c_idx
+                    elif "interaction tool" in v_lower or "interaction" in v_lower:
+                        col_mapping["interaction_tools"] = c_idx
+                    elif "speaker" in v_lower or "faculty" in v_lower:
+                        col_mapping["resource_speaker"] = c_idx
+                break
+
+        if header_row_idx == -1:
+            col_mapping = {
+                "day": 0,
+                "date": 1,
+                "time": 2,
+                "theme": 3,
+                "key_topics": 4,
+                "content": 5,
+                "student_activity": 6,
+                "ai_tools": 7,
+                "interaction_tools": 8,
+                "resource_speaker": 9
+            }
+            header_row_idx = 1
+            logger.warning("Header row not detected. Using fallback column mapping.")
+
+        # Clear existing sessions if they don't have attendance
+        try:
+            EventSession.query.delete()
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
+            return jsonify({"success": False, "message": "Cannot upload new schedule. Some existing sessions already have student attendance recorded."}), 400
+
+        added_count = 0
+        current_day = ""
+        current_date_str = ""
+        current_date_parsed = None
+
+        for r_idx in range(header_row_idx + 1, sheet.max_row + 1):
+            row = [cell.value for cell in sheet[r_idx]]
+            if not row or all(v is None for v in row):
+                continue
+
+            raw_day = row[col_mapping["day"]] if "day" in col_mapping and col_mapping["day"] < len(row) else None
+            raw_date = row[col_mapping["date"]] if "date" in col_mapping and col_mapping["date"] < len(row) else None
+            raw_time = row[col_mapping["time"]] if "time" in col_mapping and col_mapping["time"] < len(row) else None
+            raw_theme = row[col_mapping["theme"]] if "theme" in col_mapping and col_mapping["theme"] < len(row) else None
+            raw_key_topics = row[col_mapping["key_topics"]] if "key_topics" in col_mapping and col_mapping["key_topics"] < len(row) else None
+            raw_content = row[col_mapping["content"]] if "content" in col_mapping and col_mapping["content"] < len(row) else None
+            raw_activity = row[col_mapping["student_activity"]] if "student_activity" in col_mapping and col_mapping["student_activity"] < len(row) else None
+            raw_ai = row[col_mapping["ai_tools"]] if "ai_tools" in col_mapping and col_mapping["ai_tools"] < len(row) else None
+            raw_interaction = row[col_mapping["interaction_tools"]] if "interaction_tools" in col_mapping and col_mapping["interaction_tools"] < len(row) else None
+            raw_speaker = row[col_mapping["resource_speaker"]] if "resource_speaker" in col_mapping and col_mapping["resource_speaker"] < len(row) else None
+
+            if not raw_theme and not raw_time:
+                continue
+
+            if raw_day is not None and str(raw_day).strip():
+                current_day = str(raw_day).strip()
+            if raw_date is not None:
+                parsed_dt = parse_date_cell(raw_date)
+                if parsed_dt:
+                    current_date_parsed = parsed_dt
+                    if isinstance(raw_date, (datetime, date)):
+                        current_date_str = raw_date.strftime("%d-%b-%Y")
+                    else:
+                        current_date_str = str(raw_date).strip()
+                elif str(raw_date).strip():
+                    current_date_str = str(raw_date).strip()
+
+            start_time_utc = None
+            duration_minutes = 60
+
+            if raw_time and current_date_parsed:
+                start_hm, end_hm = parse_time_cell(raw_time)
+                if start_hm and end_hm:
+                    y, m, d = current_date_parsed
+                    sh, sm = start_hm
+                    eh, em = end_hm
+                    
+                    local_start = datetime(y, m, d, sh, sm)
+                    start_time_utc = local_start - timedelta(hours=5, minutes=30)
+                    
+                    start_total_mins = sh * 60 + sm
+                    end_total_mins = eh * 60 + em
+                    if end_total_mins > start_total_mins:
+                        duration_minutes = end_total_mins - start_total_mins
+                    else:
+                        duration_minutes = 60
+            
+            if not start_time_utc:
+                if current_date_parsed:
+                    y, m, d = current_date_parsed
+                    start_time_utc = datetime(y, m, d, 9, 0) - timedelta(hours=5, minutes=30)
+                else:
+                    start_time_utc = datetime.utcnow()
+
+            es = EventSession(
+                title=str(raw_theme).strip() if raw_theme else "Induction Session",
+                day=current_day,
+                date_str=current_date_str,
+                time_str=str(raw_time).strip() if raw_time else "-",
+                theme=str(raw_theme).strip() if raw_theme else "-",
+                key_topics=str(raw_key_topics).strip() if raw_key_topics else "-",
+                content_to_be_covered=str(raw_content).strip() if raw_content else "-",
+                student_activity=str(raw_activity).strip() if raw_activity else "-",
+                ai_tools=str(raw_ai).strip() if raw_ai else "-",
+                interaction_tools=str(raw_interaction).strip() if raw_interaction else "-",
+                resource_speaker=str(raw_speaker).strip() if raw_speaker else "-",
+                location="-",
+                start_time=start_time_utc,
+                duration_minutes=duration_minutes,
+                attendance_limit_minutes=10
+            )
+            db.session.add(es)
+            added_count += 1
+
+        db.session.commit()
+        return jsonify({"success": True, "message": f"Successfully imported {added_count} sessions.", "added": added_count})
+    except Exception as e:
+        logger.exception("Excel schedule import failed")
+        return jsonify({"success": False, "message": f"Excel schedule import failed: {str(e)}"}), 500
+
+
 @attendance_bp.route("/admin/event-sessions", methods=["POST"])
 @admin_required
 def create_event_session():
@@ -240,7 +496,7 @@ def create_event_session():
     data = request.get_json() or {}
     title = data.get("title", "").strip()
     duration = data.get("duration_minutes") or 60
-    attendance_limit = data.get("attendance_limit_minutes") or 15
+    attendance_limit = data.get("attendance_limit_minutes") or 10
     start_time_str = data.get("start_time")
     resource_speaker = data.get("resource_speaker", "-")
     location = data.get("location", "-")
@@ -259,7 +515,16 @@ def create_event_session():
         duration_minutes=int(duration),
         attendance_limit_minutes=int(attendance_limit),
         resource_speaker=resource_speaker,
-        location=location
+        location=location,
+        day=data.get("day", "-"),
+        date_str=data.get("date_str", "-"),
+        time_str=data.get("time_str", "-"),
+        theme=data.get("theme", "-"),
+        key_topics=data.get("key_topics", "-"),
+        content_to_be_covered=data.get("content_to_be_covered", "-"),
+        student_activity=data.get("student_activity", "-"),
+        ai_tools=data.get("ai_tools", "-"),
+        interaction_tools=data.get("interaction_tools", "-"),
     )
     db.session.add(es)
     db.session.commit()
@@ -311,6 +576,10 @@ def edit_event_session(session_id):
         
     if "location" in data:
         es.location = data["location"].strip() or "-"
+
+    for field in ["day", "date_str", "time_str", "theme", "key_topics", "content_to_be_covered", "student_activity", "ai_tools", "interaction_tools"]:
+        if field in data:
+            es.__setattr__(field, data[field].strip() or "-")
         
     db.session.commit()
     return jsonify({"success": True, "message": "Session updated successfully.", "session": es.to_dict()})

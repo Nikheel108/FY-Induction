@@ -135,13 +135,24 @@ class EventSession(db.Model):
     location = db.Column(db.String(150), nullable=True)
     start_time = db.Column(db.DateTime, nullable=False)
     duration_minutes = db.Column(db.Integer, nullable=False, default=60)
-    attendance_limit_minutes = db.Column(db.Integer, nullable=False, default=15)
+    attendance_limit_minutes = db.Column(db.Integer, nullable=False, default=10)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+    # New columns from schedule Excel sheet
+    day = db.Column(db.String(50), nullable=True)
+    date_str = db.Column(db.String(50), nullable=True)
+    time_str = db.Column(db.String(100), nullable=True)
+    theme = db.Column(db.String(255), nullable=True)
+    key_topics = db.Column(db.Text, nullable=True)
+    content_to_be_covered = db.Column(db.Text, nullable=True)
+    student_activity = db.Column(db.Text, nullable=True)
+    ai_tools = db.Column(db.Text, nullable=True)
+    interaction_tools = db.Column(db.Text, nullable=True)
 
     attendances = db.relationship("Attendance", backref="event_session", lazy=True)
 
     def to_dict(self):
-        att_limit = self.attendance_limit_minutes if self.attendance_limit_minutes is not None else 15
+        att_limit = self.attendance_limit_minutes if self.attendance_limit_minutes is not None else 10
         duration = self.duration_minutes if self.duration_minutes is not None else 60
         return {
             "id": self.id,
@@ -152,6 +163,15 @@ class EventSession(db.Model):
             "duration_minutes": duration,
             "attendance_limit_minutes": att_limit,
             "created_at": self.created_at.isoformat() + "Z" if self.created_at else None,
+            "day": self.day or "-",
+            "date_str": self.date_str or "-",
+            "time_str": self.time_str or "-",
+            "theme": self.theme or "-",
+            "key_topics": self.key_topics or "-",
+            "content_to_be_covered": self.content_to_be_covered or "-",
+            "student_activity": self.student_activity or "-",
+            "ai_tools": self.ai_tools or "-",
+            "interaction_tools": self.interaction_tools or "-",
         }
 
 

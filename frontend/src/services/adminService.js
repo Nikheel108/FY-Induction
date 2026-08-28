@@ -43,3 +43,8 @@ export const updateContactQueryStatus = (id, status) =>
 
 export const deleteContactQuery = (id) =>
   api.delete(`/admin/contact-queries/${id}`).then((res) => res.data);
+
+export const uploadScheduleFile = (formData) =>
+  api.post("/admin/event-sessions/upload-excel", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  }).then((res) => res.data);
