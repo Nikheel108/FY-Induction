@@ -608,6 +608,26 @@ def delete_event_session(session_id):
         return jsonify({"success": False, "message": "Database error while deleting."}), 500
 
 
+@attendance_bp.route("/admin/event-sessions/clear", methods=["DELETE"])
+@admin_required
+def clear_all_event_sessions():
+    """Delete all event sessions, highlights, and attendance records."""
+    try:
+        # Clear child records to prevent FK constraints
+        Attendance.query.delete()
+        Highlight.query.delete()
+        EventSession.query.delete()
+        db.session.commit()
+        return jsonify({"success": True, "message": "All event sessions and linked records cleared successfully."})
+    except Exception as e:
+        db.session.rollback()
+        logger.exception("Failed to clear event sessions")
+        return jsonify({"success": False, "message": f"Database error: {str(e)}"}), 500
+
+
+
+
+
 # ----- Public endpoint for active session -----
 
 @attendance_bp.route("/attendance/active-session", methods=["GET"])

@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 import { FaHome } from "react-icons/fa";
 
 import { useToast } from "../context/ToastContext";
-import { fetchEventSessions, createEventSession, deleteEventSession, updateEventSession, uploadScheduleFile } from "../services/adminService";
+import { fetchEventSessions, createEventSession, deleteEventSession, updateEventSession, uploadScheduleFile, clearAllEventSessions } from "../services/adminService";
 import Sidebar from "../components/Sidebar";
 import Modal from "../components/Modal";
 
@@ -150,6 +150,20 @@ export default function AdminEventSessions() {
       toast.error(err.message || "Failed to upload schedule.");
     } finally {
       setUploadingSchedule(false);
+    }
+  };
+
+  const handleClearAllEvents = async () => {
+    if (!window.confirm("WARNING: This will permanently delete ALL event sessions, linked attendance records, and highlights. Are you absolutely sure?")) return;
+    try {
+      setSubmitting(true);
+      const res = await clearAllEventSessions();
+      toast.success(res.message || "All events cleared successfully.");
+      loadSessions();
+    } catch (err) {
+      toast.error(err.message || "Failed to clear events.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -681,6 +695,16 @@ export default function AdminEventSessions() {
                   >
                     {uploadingSchedule ? "Importing..." : "Upload Schedule"}
                   </button>
+                  <div className="pt-2 border-t border-slate-100 mt-2">
+                    <button
+                      type="button"
+                      disabled={loading || submitting}
+                      onClick={handleClearAllEvents}
+                      className="w-full justify-center py-2 text-xs bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition-all shadow-sm flex items-center gap-1.5"
+                    >
+                      <FaTrash className="text-[10px]" /> Clear All Events
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
