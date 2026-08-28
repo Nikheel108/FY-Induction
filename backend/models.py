@@ -259,4 +259,24 @@ class ContactQuery(db.Model):
             "description": self.description,
             "status": self.status,
             "created_at": self.created_at.isoformat() + "Z" if self.created_at else None,
+        }
+
+
+class PreassignedPassword(db.Model):
+    """List of passwords uploaded by admin to be assigned sequentially to registering students."""
+    __tablename__ = "preassigned_passwords"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    password = db.Column(db.String(50), nullable=False, unique=True)
+    is_used = db.Column(db.Boolean, nullable=False, default=False)
+    assigned_to_prn = db.Column(db.String(30), nullable=True, index=True)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "password": self.password,
+            "is_used": self.is_used,
+            "assigned_to_prn": self.assigned_to_prn,
+            "created_at": self.created_at.isoformat() + "Z" if self.created_at else None,
         }

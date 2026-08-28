@@ -290,9 +290,19 @@ def register_student():
     student.is_first_login = False
     _apply_payload(student, cleaned)
     
-    # Generate 6-character random alphanumeric password using dedicated password service
-    from services.password_service import generate_random_password
-    raw_password = generate_random_password(6)
+    # Fetch next unused preassigned password
+    from models import PreassignedPassword
+    unused_pwd = PreassignedPassword.query.filter_by(is_used=False).order_by(PreassignedPassword.id.asc()).first()
+    
+    if unused_pwd:
+        raw_password = unused_pwd.password
+        unused_pwd.is_used = True
+        unused_pwd.assigned_to_prn = prn
+    else:
+        # Fallback to random password if preassigned list is exhausted
+        from services.password_service import generate_random_password
+        raw_password = generate_random_password(6)
+        
     student.set_password(raw_password)
 
     db.session.add(student)

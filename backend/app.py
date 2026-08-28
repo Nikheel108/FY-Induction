@@ -67,6 +67,35 @@ def create_app(config_class=Config):
         try:
             db.create_all()
             
+            # Auto-populate preassigned_passwords table from pass/passwords.txt if empty
+            from models import PreassignedPassword
+            import os
+            try:
+                count = PreassignedPassword.query.count()
+                if count == 0:
+                    passwords_txt_path = os.path.join(app.root_path, "..", "pass", "passwords.txt")
+                    if os.path.exists(passwords_txt_path):
+                        with open(passwords_txt_path, "r", encoding="utf-8") as f:
+                            lines = f.read().splitlines()
+                        
+                        existing_pwds = {p.password for p in PreassignedPassword.query.all()}
+                        to_add = []
+                        for line in lines:
+                            pwd = line.strip()
+                            if pwd and pwd not in existing_pwds:
+                                to_add.append(PreassignedPassword(password=pwd))
+                                existing_pwds.add(pwd)
+                                
+                        if to_add:
+                            db.session.bulk_save_objects(to_add)
+                            db.session.commit()
+                        logger.info("Preassigned passwords table seeded successfully.")
+                    else:
+                        logger.warning("passwords.txt not found at path: %s", passwords_txt_path)
+            except Exception as e:
+                db.session.rollback()
+                logger.error("Failed to seed preassigned passwords: %s", e)
+            
             # Auto-migrate valid_prns table to add new columns (ignore if they already exist)
             from sqlalchemy import text
             try:
