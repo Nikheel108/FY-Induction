@@ -23,6 +23,11 @@ This platform was designed to completely digitize and streamline the event induc
 
 Whether you're organizing a **First Year Induction**, an **Annual Cultural Fest**, or a **Department Seminar**, this repository provides a plug-and-play foundation that any institution or department can easily adapt.
 
+For a complete feature inventory, architecture diagram, deployment instructions,
+environment-variable reference, and a detailed explanation of how the Vercel +
+Render + managed PostgreSQL free-tier setup operates, see the
+[project documentation](docs/PROJECT_DOCUMENTATION.md).
+
 ---
 
 ## 🚀 Key Features
